@@ -19,15 +19,10 @@ export interface Subscription {
 }
 
 export interface SubscriptionStats {
-  totalSubscriptions: number;
-  activeSubscriptions: number;
-  monthlyRevenue: number;
-  averageRevenuePerUser: number;
-  planDistribution: {
-    basic: number;
-    premium: number;
-    enterprise: number;
-  };
+  subscription: number;
+  activeSubscription: number;
+  canceledSubscription: number;
+  pastDueSubscription: number;
 }
 
 export interface PaginationInfo {

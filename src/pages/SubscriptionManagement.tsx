@@ -15,8 +15,6 @@ import {
   FileText,
   Eye,
   CreditCard,
-  DollarSign,
-  TrendingUp,
   Zap,
   Crown,
   Building,
@@ -34,7 +32,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAutoAnimate } from '@formkit/auto-animate/react';
 import { authService } from '../services/auth';
-import { type Subscription, type SubscriptionStats, type PaginationInfo } from '../services/subscription';
+import { subscriptionService, type Subscription, type SubscriptionStats, type PaginationInfo } from '../services/subscription';
 import { mockSubscriptionService } from '../data/mockSubscriptions';
 import Snackbar from '../components/Snackbar';
 
@@ -140,7 +138,7 @@ const SubscriptionManagement = () => {
   const fetchStats = async () => {
     try {
       setIsStatsLoading(true);
-      const result = await mockSubscriptionService.getSubscriptionStats();
+      const result = await subscriptionService.getSubscriptionStats();
       setStats(result.data);
     } catch (err) {
       console.error('Error fetching subscription stats:', err);
@@ -469,7 +467,7 @@ const SubscriptionManagement = () => {
                         <div>
                           <p className="text-blue-100 text-sm font-medium">Total Subscriptions</p>
                           <p className="text-3xl font-bold">
-                            {stats.totalSubscriptions.toLocaleString()}
+                            {stats.subscription.toLocaleString()}
                           </p>
                           <p className="text-blue-100 text-xs mt-1">All time</p>
                         </div>
@@ -482,39 +480,43 @@ const SubscriptionManagement = () => {
                         <div>
                           <p className="text-green-100 text-sm font-medium">Active</p>
                           <p className="text-3xl font-bold">
-                            {stats.activeSubscriptions.toLocaleString()}
+                            {stats.activeSubscription.toLocaleString()}
                           </p>
                           <p className="text-green-100 text-xs mt-1">
-                            {((stats.activeSubscriptions / stats.totalSubscriptions) * 100).toFixed(1)}% of total
+                            {stats.subscription > 0 ? ((stats.activeSubscription / stats.subscription) * 100).toFixed(1) : 0}% of total
                           </p>
                         </div>
                         <CheckCircle2 className="w-8 h-8 text-green-200" />
                       </div>
                     </div>
 
-                    <div className="bg-gradient-to-br from-wine-500 to-wine-600 rounded-xl p-6 text-white">
+                    <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-xl p-6 text-white">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-wine-100 text-sm font-medium">Monthly Revenue</p>
+                          <p className="text-red-100 text-sm font-medium">Canceled</p>
                           <p className="text-3xl font-bold">
-                            {formatCurrency(stats.monthlyRevenue)}
+                            {stats.canceledSubscription.toLocaleString()}
                           </p>
-                          <p className="text-wine-100 text-xs mt-1">This month</p>
+                          <p className="text-red-100 text-xs mt-1">
+                            {stats.subscription > 0 ? ((stats.canceledSubscription / stats.subscription) * 100).toFixed(1) : 0}% of total
+                          </p>
                         </div>
-                        <DollarSign className="w-8 h-8 text-wine-200" />
+                        <X className="w-8 h-8 text-red-200" />
                       </div>
                     </div>
 
-                    <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-6 text-white">
+                    <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-6 text-white">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-purple-100 text-sm font-medium">Avg Revenue/User</p>
+                          <p className="text-orange-100 text-sm font-medium">Past Due</p>
                           <p className="text-3xl font-bold">
-                            {formatCurrency(stats.averageRevenuePerUser)}
+                            {stats.pastDueSubscription.toLocaleString()}
                           </p>
-                          <p className="text-purple-100 text-xs mt-1">Per subscription</p>
+                          <p className="text-orange-100 text-xs mt-1">
+                            {stats.subscription > 0 ? ((stats.pastDueSubscription / stats.subscription) * 100).toFixed(1) : 0}% of total
+                          </p>
                         </div>
-                        <TrendingUp className="w-8 h-8 text-purple-200" />
+                        <Clock className="w-8 h-8 text-orange-200" />
                       </div>
                     </div>
                   </>
