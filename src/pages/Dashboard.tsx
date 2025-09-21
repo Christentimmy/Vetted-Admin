@@ -87,12 +87,12 @@ const Dashboard = () => {
 
   // Navigation items for the sidebar
   const navItems = [
-    { icon: Home, label: 'Dashboard', active: true, path: '/dashboard' },
-    { icon: Phone, label: 'Phone Lookup', active: false, path: '/phone-lookup' },
-    { icon: Users, label: 'User Management', active: false, path: '/users' },
-    { icon: BarChart3, label: 'Analytics', active: false, path: '/analytics' },
-    { icon: Shield, label: 'Security', active: false, path: '/security' },
-    { icon: FileText, label: 'Reports', active: false, path: '/reports' }
+    { icon: Home, label: 'Dashboard', path: '/dashboard' },
+    { icon: Phone, label: 'Phone Lookup', path: '/phone-lookup' },
+    { icon: Users, label: 'User Management', path: '/users' },
+    { icon: BarChart3, label: 'Analytics', path: '/analytics' },
+    { icon: Shield, label: 'Security', path: '/security' },
+    { icon: FileText, label: 'Reports', path: '/reports' }
   ] as const;
   
   // Get the current path to determine active nav item
