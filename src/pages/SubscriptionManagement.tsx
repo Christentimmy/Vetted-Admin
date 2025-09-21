@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { 
   Search, 
   User, 
-  Check, 
   X, 
   Bell,
   Moon,
@@ -13,7 +12,6 @@ import {
   BarChart3,
   Shield,
   FileText,
-  Eye,
   CreditCard,
   Zap,
   Crown,
@@ -22,7 +20,6 @@ import {
   Plus,
   ArrowUp,
   ArrowDown,
-  MoreHorizontal,
   AlertCircle,
   CheckCircle2,
   Clock,
@@ -33,8 +30,8 @@ import { motion } from 'framer-motion';
 import { useAutoAnimate } from '@formkit/auto-animate/react';
 import { authService } from '../services/auth';
 import { subscriptionService, type Subscription, type SubscriptionStats, type PaginationInfo } from '../services/subscription';
-import { mockSubscriptionService } from '../data/mockSubscriptions';
 import Snackbar from '../components/Snackbar';
+import InvoiceHistoryDialog from '../components/InvoiceHistoryDialog';
 
 const SubscriptionManagement = () => {
   const navigate = useNavigate();
@@ -45,7 +42,7 @@ const SubscriptionManagement = () => {
   const [isStatsLoading, setIsStatsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedStatus, setSelectedStatus] = useState<'active' | 'inactive' | 'cancelled' | 'expired' | 'all'>('all');
-  const [selectedPlan, setSelectedPlan] = useState<'basic' | 'premium' | 'enterprise' | 'all'>('all');
+  const [selectedPlan, setSelectedPlan] = useState<string>('all');
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [stats, setStats] = useState<SubscriptionStats | null>(null);
@@ -68,25 +65,40 @@ const SubscriptionManagement = () => {
   const [sortField, setSortField] = useState<'userName' | 'planType' | 'status' | 'price' | 'endDate'>('endDate');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
+  const [invoiceDialog, setInvoiceDialog] = useState<{
+    isOpen: boolean;
+    userId: string;
+    userName: string;
+  }>({
+    isOpen: false,
+    userId: '',
+    userName: ''
+  });
+  const [cancellingSubscriptions, setCancellingSubscriptions] = useState<Set<string>>(new Set());
   const [parent] = useAutoAnimate();
 
-  const planIcons = {
-    basic: <Zap className="w-4 h-4" />,
-    premium: <Crown className="w-4 h-4" />,
-    enterprise: <Building className="w-4 h-4" />
+  const getPlanIcon = (planName: string) => {
+    const plan = planName.toLowerCase();
+    if (plan.includes('basic') || plan.includes('starter')) return <Zap className="w-4 h-4" />;
+    if (plan.includes('pro') || plan.includes('premium')) return <Crown className="w-4 h-4" />;
+    if (plan.includes('enterprise') || plan.includes('business')) return <Building className="w-4 h-4" />;
+    return <CreditCard className="w-4 h-4" />;
   };
 
-  const planColors = {
-    basic: 'from-blue-500 to-cyan-600',
-    premium: 'from-purple-500 to-indigo-600',
-    enterprise: 'from-emerald-500 to-teal-600'
+  const getPlanColor = (planName: string) => {
+    const plan = planName.toLowerCase();
+    if (plan.includes('basic') || plan.includes('starter')) return 'from-blue-500 to-cyan-600';
+    if (plan.includes('pro') || plan.includes('premium')) return 'from-purple-500 to-indigo-600';
+    if (plan.includes('enterprise') || plan.includes('business')) return 'from-emerald-500 to-teal-600';
+    return 'from-gray-500 to-gray-600';
   };
 
   const statusColors = {
     active: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
     inactive: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300',
     cancelled: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
-    expired: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300'
+    expired: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300',
+    past_due: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
   };
 
   const toggleDarkMode = () => {
@@ -119,11 +131,11 @@ const SubscriptionManagement = () => {
   // Get the current path to determine active nav item
   const currentPath = location.pathname;
 
-  // Fetch subscriptions from mock service
+  // Fetch subscriptions from real API
   const fetchSubscriptions = async (page: number = 1) => {
     try {
       setIsLoading(true);
-      const result = await mockSubscriptionService.getAllSubscriptions(page);
+      const result = await subscriptionService.getAllSubscriptions(page);
       setSubscriptions(result.data);
       setPagination(result.pagination);
     } catch (err) {
@@ -155,11 +167,11 @@ const SubscriptionManagement = () => {
   const filteredAndSortedSubscriptions = useMemo(() => {
     let filtered = subscriptions.filter(subscription => {
       const matchesSearch = searchTerm === '' || 
-        subscription.userId.displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        subscription.userId.email.toLowerCase().includes(searchTerm.toLowerCase());
+        subscription.displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        subscription.email.toLowerCase().includes(searchTerm.toLowerCase());
       
       const matchesStatus = selectedStatus === 'all' || subscription.status === selectedStatus;
-      const matchesPlan = selectedPlan === 'all' || subscription.planType === selectedPlan;
+      const matchesPlan = selectedPlan === 'all' || subscription.planName.toLowerCase() === selectedPlan;
       
       return matchesSearch && matchesStatus && matchesPlan;
     });
@@ -170,24 +182,25 @@ const SubscriptionManagement = () => {
       
       switch (sortField) {
         case 'userName':
-          aValue = a.userId.displayName.toLowerCase();
-          bValue = b.userId.displayName.toLowerCase();
+          aValue = a.displayName.toLowerCase();
+          bValue = b.displayName.toLowerCase();
           break;
         case 'planType':
-          aValue = a.planType;
-          bValue = b.planType;
+          aValue = a.planName.toLowerCase();
+          bValue = b.planName.toLowerCase();
           break;
         case 'status':
           aValue = a.status;
           bValue = b.status;
           break;
         case 'price':
-          aValue = a.price;
-          bValue = b.price;
+          // Since price is not available in the new structure, sort by plan name instead
+          aValue = a.planName.toLowerCase();
+          bValue = b.planName.toLowerCase();
           break;
         case 'endDate':
-          aValue = new Date(a.endDate).getTime();
-          bValue = new Date(b.endDate).getTime();
+          aValue = new Date(a.currentPeriodEnd).getTime();
+          bValue = new Date(b.currentPeriodEnd).getTime();
           break;
         default:
           return 0;
@@ -222,12 +235,13 @@ const SubscriptionManagement = () => {
     }
   };
 
-  const handleCancelSubscription = async (subscriptionId: string) => {
+  const handleCancelSubscription = async (userId: string) => {
     try {
-      await mockSubscriptionService.cancelSubscription(subscriptionId);
+      setCancellingSubscriptions(prev => new Set(prev).add(userId));
+      await subscriptionService.cancelSubscription(userId);
       setSubscriptions(prev => 
         prev.map(sub => 
-          sub._id === subscriptionId 
+          sub.userId === userId 
             ? { ...sub, status: 'cancelled' as const }
             : sub
         )
@@ -236,25 +250,15 @@ const SubscriptionManagement = () => {
     } catch (error) {
       console.error('Error cancelling subscription:', error);
       showSnackbar('Failed to cancel subscription. Please try again.', 'error');
+    } finally {
+      setCancellingSubscriptions(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(userId);
+        return newSet;
+      });
     }
   };
 
-  const handleReactivateSubscription = async (subscriptionId: string) => {
-    try {
-      await mockSubscriptionService.reactivateSubscription(subscriptionId);
-      setSubscriptions(prev => 
-        prev.map(sub => 
-          sub._id === subscriptionId 
-            ? { ...sub, status: 'active' as const }
-            : sub
-        )
-      );
-      showSnackbar('Subscription reactivated successfully!', 'success');
-    } catch (error) {
-      console.error('Error reactivating subscription:', error);
-      showSnackbar('Failed to reactivate subscription. Please try again.', 'error');
-    }
-  };
 
   const showSnackbar = (message: string, type: 'success' | 'error') => {
     setSnackbar({
@@ -268,6 +272,22 @@ const SubscriptionManagement = () => {
     setSnackbar(prev => ({ ...prev, isOpen: false }));
   };
 
+  const handleViewInvoiceHistory = (userId: string, userName: string) => {
+    setInvoiceDialog({
+      isOpen: true,
+      userId,
+      userName
+    });
+  };
+
+  const closeInvoiceDialog = () => {
+    setInvoiceDialog({
+      isOpen: false,
+      userId: '',
+      userName: ''
+    });
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -276,12 +296,6 @@ const SubscriptionManagement = () => {
     });
   };
 
-  const formatCurrency = (amount: number, currency: string = 'USD') => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: currency
-    }).format(amount);
-  };
 
   if (isLoading) {
     return (
@@ -557,12 +571,12 @@ const SubscriptionManagement = () => {
                     <select
                       className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-wine-500 focus:border-transparent"
                       value={selectedPlan}
-                      onChange={(e) => setSelectedPlan(e.target.value as any)}
+                      onChange={(e) => setSelectedPlan(e.target.value)}
                     >
                       <option value="all">All Plans</option>
-                      <option value="basic">Basic</option>
-                      <option value="premium">Premium</option>
-                      <option value="enterprise">Enterprise</option>
+                      {Array.from(new Set(subscriptions.map(sub => sub.planName))).map(planName => (
+                        <option key={planName} value={planName.toLowerCase()}>{planName}</option>
+                      ))}
                     </select>
 
                     <div className="flex border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden">
@@ -636,7 +650,7 @@ const SubscriptionManagement = () => {
                               onClick={() => handleSort('price')}
                               className="flex items-center space-x-1 hover:text-gray-700 dark:hover:text-gray-200"
                             >
-                              <span>Price</span>
+                              <span>Phone</span>
                               {sortField === 'price' && (
                                 sortDirection === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
                               )}
@@ -662,36 +676,32 @@ const SubscriptionManagement = () => {
                         {filteredAndSortedSubscriptions.length > 0 ? (
                           filteredAndSortedSubscriptions.map((subscription) => (
                             <motion.tr
-                              key={subscription._id}
+                              key={subscription.id}
                               initial={{ opacity: 0 }}
                               animate={{ opacity: 1 }}
-                              className="hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                              className="hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer"
+                              onClick={() => handleViewInvoiceHistory(subscription.userId, subscription.displayName)}
                             >
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <div className="flex items-center">
-                                  <div className={`h-10 w-10 rounded-full flex items-center justify-center text-white bg-gradient-to-br ${planColors[subscription.planType]}`}>
-                                    {planIcons[subscription.planType]}
+                                  <div className={`h-10 w-10 rounded-full flex items-center justify-center text-white bg-gradient-to-br ${getPlanColor(subscription.planName)}`}>
+                                    {getPlanIcon(subscription.planName)}
                                   </div>
                                   <div className="ml-4">
                                     <div className="text-sm font-medium text-gray-900 dark:text-white">
-                                      {subscription.userId.displayName}
+                                      {subscription.displayName}
                                     </div>
                                     <div className="text-sm text-gray-500 dark:text-gray-400">
-                                      {subscription.userId.email}
+                                      {subscription.email || subscription.phoneNumber}
                                     </div>
                                   </div>
                                 </div>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <div className="flex items-center">
-                                  <span className="text-sm font-medium text-gray-900 dark:text-white capitalize">
-                                    {subscription.planType}
+                                  <span className="text-sm font-medium text-gray-900 dark:text-white">
+                                    {subscription.planName}
                                   </span>
-                                  {subscription.autoRenew && (
-                                    <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">
-                                      Auto-renew
-                                    </span>
-                                  )}
                                 </div>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap">
@@ -700,39 +710,33 @@ const SubscriptionManagement = () => {
                                   {subscription.status === 'cancelled' && <X className="w-3 h-3 mr-1" />}
                                   {subscription.status === 'expired' && <Clock className="w-3 h-3 mr-1" />}
                                   {subscription.status === 'inactive' && <Ban className="w-3 h-3 mr-1" />}
+                                  {subscription.status === 'past_due' && <Clock className="w-3 h-3 mr-1" />}
                                   {subscription.status}
                                 </span>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                                {formatCurrency(subscription.price, subscription.currency)}
+                                {subscription.phoneNumber}
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                {formatDate(subscription.endDate)}
+                                {formatDate(subscription.currentPeriodEnd)}
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                <div className="flex items-center justify-end space-x-2">
-                                  <button className="text-wine-600 hover:text-wine-900 dark:text-wine-400 dark:hover:text-wine-300">
-                                    <Eye className="w-4 h-4" />
-                                  </button>
-                                  {subscription.status === 'active' ? (
-                                    <button 
-                                      onClick={() => handleCancelSubscription(subscription._id)}
-                                      className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
-                                    >
+                                {subscription.status === 'active' && (
+                                  <button 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleCancelSubscription(subscription.userId);
+                                    }}
+                                    disabled={cancellingSubscriptions.has(subscription.userId)}
+                                    className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                                  >
+                                    {cancellingSubscriptions.has(subscription.userId) ? (
+                                      <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-red-600"></div>
+                                    ) : (
                                       <X className="w-4 h-4" />
-                                    </button>
-                                  ) : (
-                                    <button 
-                                      onClick={() => handleReactivateSubscription(subscription._id)}
-                                      className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
-                                    >
-                                      <Check className="w-4 h-4" />
-                                    </button>
-                                  )}
-                                  <button className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-                                    <MoreHorizontal className="w-4 h-4" />
+                                    )}
                                   </button>
-                                </div>
+                                )}
                               </td>
                             </motion.tr>
                           ))
@@ -761,24 +765,25 @@ const SubscriptionManagement = () => {
                   {filteredAndSortedSubscriptions.length > 0 ? (
                     filteredAndSortedSubscriptions.map((subscription) => (
                       <motion.div
-                        key={subscription._id}
+                        key={subscription.id}
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.9 }}
                         transition={{ duration: 0.2 }}
-                        className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 hover:shadow-lg transition-shadow"
+                        className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 hover:shadow-lg transition-shadow cursor-pointer"
+                        onClick={() => handleViewInvoiceHistory(subscription.userId, subscription.displayName)}
                       >
                         <div className="flex items-start justify-between mb-4">
                           <div className="flex items-center space-x-3">
-                            <div className={`h-12 w-12 rounded-full flex items-center justify-center text-white bg-gradient-to-br ${planColors[subscription.planType]}`}>
-                              {planIcons[subscription.planType]}
+                            <div className={`h-12 w-12 rounded-full flex items-center justify-center text-white bg-gradient-to-br ${getPlanColor(subscription.planName)}`}>
+                              {getPlanIcon(subscription.planName)}
                             </div>
                             <div>
                               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                                {subscription.userId.displayName}
+                                {subscription.displayName}
                               </h3>
                               <p className="text-sm text-gray-500 dark:text-gray-400">
-                                {subscription.userId.email}
+                                {subscription.email || subscription.phoneNumber}
                               </p>
                             </div>
                           </div>
@@ -790,50 +795,45 @@ const SubscriptionManagement = () => {
                         <div className="space-y-3">
                           <div className="flex justify-between items-center">
                             <span className="text-sm text-gray-500 dark:text-gray-400">Plan</span>
-                            <span className="text-sm font-medium text-gray-900 dark:text-white capitalize">
-                              {subscription.planType}
+                            <span className="text-sm font-medium text-gray-900 dark:text-white">
+                              {subscription.planName}
                             </span>
                           </div>
                           <div className="flex justify-between items-center">
-                            <span className="text-sm text-gray-500 dark:text-gray-400">Price</span>
+                            <span className="text-sm text-gray-500 dark:text-gray-400">Phone</span>
                             <span className="text-sm font-medium text-gray-900 dark:text-white">
-                              {formatCurrency(subscription.price, subscription.currency)}
+                              {subscription.phoneNumber}
                             </span>
                           </div>
                           <div className="flex justify-between items-center">
                             <span className="text-sm text-gray-500 dark:text-gray-400">Expires</span>
                             <span className="text-sm font-medium text-gray-900 dark:text-white">
-                              {formatDate(subscription.endDate)}
+                              {formatDate(subscription.currentPeriodEnd)}
                             </span>
                           </div>
-                          {subscription.autoRenew && (
-                            <div className="flex items-center text-xs text-green-600 dark:text-green-400">
-                              <Check className="h-3 w-3 mr-1" />
-                              Auto-renewal enabled
-                            </div>
-                          )}
                         </div>
                         
-                        <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-end space-x-2">
-                          <button className="text-wine-600 hover:text-wine-900 dark:text-wine-400 dark:hover:text-wine-300">
-                            <Eye className="w-4 h-4" />
-                          </button>
-                          {subscription.status === 'active' ? (
+                        {subscription.status === 'active' && (
+                          <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-end">
                             <button 
-                              onClick={() => handleCancelSubscription(subscription._id)}
-                              className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleCancelSubscription(subscription.userId);
+                              }}
+                              disabled={cancellingSubscriptions.has(subscription.userId)}
+                              className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                              <X className="w-4 h-4" />
+                              {cancellingSubscriptions.has(subscription.userId) ? (
+                                <div className="flex items-center space-x-2">
+                                  <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-red-600"></div>
+                                  <span className="text-sm">Cancelling...</span>
+                                </div>
+                              ) : (
+                                <X className="w-4 h-4" />
+                              )}
                             </button>
-                          ) : (
-                            <button 
-                              onClick={() => handleReactivateSubscription(subscription._id)}
-                              className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
-                            >
-                              <Check className="w-4 h-4" />
-                            </button>
-                          )}
-                        </div>
+                          </div>
+                        )}
                       </motion.div>
                     ))
                   ) : (
@@ -889,6 +889,14 @@ const SubscriptionManagement = () => {
         message={snackbar.message}
         type={snackbar.type}
         duration={4000}
+      />
+
+      {/* Invoice History Dialog */}
+      <InvoiceHistoryDialog
+        isOpen={invoiceDialog.isOpen}
+        onClose={closeInvoiceDialog}
+        userId={invoiceDialog.userId}
+        userName={invoiceDialog.userName}
       />
     </div>
   );
