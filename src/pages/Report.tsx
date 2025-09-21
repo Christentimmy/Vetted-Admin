@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { authService } from '../services/auth';
+import { reportService, PostReport } from '../services/report';
 import {
   Search,
   Bell,
@@ -15,24 +16,20 @@ import {
   Shield,
   BarChart3,
   FileText,
-  DollarSign,
   CreditCard,
-  Download,
-  Calendar,
-  PieChart,
-  BarChart,
-  LineChart,
-  ChevronDown
+  Flag,
+  Image,
+  AlertCircle,
+  Trash2
 } from 'lucide-react';
 
-interface ReportData {
-  id: string;
-  title: string;
-  category: string;
-  generatedDate: string;
-  downloadCount: number;
-  size: string;
+// Define modal state interface
+interface ModalState {
+  isOpen: boolean;
+  mediaUrl: string;
+  mediaType: string;
 }
+
 
 const Report = () => {
   const navigate = useNavigate();
@@ -40,9 +37,22 @@ const Report = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'financial' | 'user' | 'system' | 'all'>('all');
-  const [selectedTimeframe] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('monthly');
-  const [reports, setReports] = useState<ReportData[]>([]);
+  const [reports, setReports] = useState<PostReport[]>([]);
+  const [page, setPage] = useState(1);
+  const [limit] = useState(20);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalReports, setTotalReports] = useState(0);
+  
+  // Modal state for media preview
+  const [modal, setModal] = useState<ModalState>({
+    isOpen: false,
+    mediaUrl: '',
+    mediaType: ''
+  });
+  
+  // Delete post state
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
   
   const toggleDarkMode = () => {
     setIsDarkMode(!isDarkMode);
@@ -52,83 +62,76 @@ const Report = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
 
-  // Simulated data loading
+  // Fetch post reports from API
   useEffect(() => {
-    const loadReports = async () => {
+    const fetchReports = async () => {
       setIsLoading(true);
       try {
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 800));
-        
-        // Mock data
-        const mockReports: ReportData[] = [
-          {
-            id: '1',
-            title: 'Monthly Financial Summary',
-            category: 'financial',
-            generatedDate: '2023-10-01',
-            downloadCount: 24,
-            size: '1.2 MB'
-          },
-          {
-            id: '2',
-            title: 'User Growth Analysis',
-            category: 'user',
-            generatedDate: '2023-09-28',
-            downloadCount: 18,
-            size: '3.5 MB'
-          },
-          {
-            id: '3',
-            title: 'Revenue Projection Q4',
-            category: 'financial',
-            generatedDate: '2023-09-25',
-            downloadCount: 32,
-            size: '2.8 MB'
-          },
-          {
-            id: '4',
-            title: 'System Performance Metrics',
-            category: 'system',
-            generatedDate: '2023-09-22',
-            downloadCount: 12,
-            size: '4.1 MB'
-          },
-          {
-            id: '5',
-            title: 'User Engagement Statistics',
-            category: 'user',
-            generatedDate: '2023-09-20',
-            downloadCount: 27,
-            size: '2.3 MB'
-          },
-          {
-            id: '6',
-            title: 'Annual Financial Report',
-            category: 'financial',
-            generatedDate: '2023-09-15',
-            downloadCount: 45,
-            size: '5.7 MB'
-          },
-        ];
-        
-        setReports(mockReports);
+        const response = await reportService.getPostReports(page, limit);
+        setReports(response.data);
+        setTotalPages(response.pagination.totalPages);
+        setTotalReports(response.pagination.total);
       } catch (error) {
-        console.error('Failed to load reports:', error);
+        console.error('Error fetching reports:', error);
       } finally {
         setIsLoading(false);
       }
     };
     
-    loadReports();
-  }, []);
+    fetchReports();
+  }, [page, limit]);
 
-  // Filter reports based on active tab and search term
+  // Filter reports based on search term
   const filteredReports = reports.filter(report => {
-    const matchesTab = activeTab === report.category || activeTab === 'all';
-    const matchesSearch = report.title.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesTab && matchesSearch;
+    const title = report.title || 'Untitled Post';
+    const matchesSearch = searchTerm ? title.toLowerCase().includes(searchTerm.toLowerCase()) : true;
+    return matchesSearch;
   });
+  
+  // Handle pagination
+  const handlePageChange = (newPage: number) => {
+    if (newPage > 0 && newPage <= totalPages) {
+      setPage(newPage);
+    }
+  };
+
+  // Handle media preview
+  const openMediaPreview = (url: string, type: string) => {
+    setModal({
+      isOpen: true,
+      mediaUrl: url,
+      mediaType: type
+    });
+  };
+  
+  // Close media preview
+  const closeMediaPreview = () => {
+    setModal({
+      isOpen: false,
+      mediaUrl: '',
+      mediaType: ''
+    });
+  };
+  
+  // Handle delete post
+  const handleDeletePost = async (postId: string) => {
+    if (window.confirm('Are you sure you want to delete this post?')) {
+      setIsDeleting(true);
+      setDeleteError('');
+      
+      try {
+        await reportService.deletePost(postId);
+        // Remove the deleted post from the list
+        setReports(reports.filter(report => report._id !== postId));
+        setTotalReports(totalReports - 1);
+      } catch (error) {
+        console.error('Error deleting post:', error);
+        setDeleteError('Failed to delete post. Please try again.');
+      } finally {
+        setIsDeleting(false);
+      }
+    }
+  };
 
   // Logout handler
   const handleLogout = async () => {
@@ -271,218 +274,222 @@ const Report = () => {
           {/* Main Content Area with a different layout */}
           <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 dark:bg-gray-900">
             <div className="container mx-auto px-4 py-6">
-              {/* Report Header with Tabs - Different from Dashboard */}
+              {/* Report Header */}
               <div className="mb-6">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Reports</h1>
-                    <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">Generate and download detailed reports</p>
+                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Reported Posts</h1>
+                    <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">Manage posts that have been reported by users</p>
                   </div>
                   
-                  <div className="mt-4 sm:mt-0 flex items-center space-x-2">
-                    <div className="relative">
-                      <button className="flex items-center px-4 py-2 text-sm font-medium rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700">
-                        <Calendar className="w-4 h-4 mr-2" />
-                        {selectedTimeframe.charAt(0).toUpperCase() + selectedTimeframe.slice(1)}
-                        <ChevronDown className="w-4 h-4 ml-2" />
-                      </button>
+                  <div className="mt-4 sm:mt-0">
+                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                      Total reported posts: <span className="font-semibold">{totalReports}</span>
                     </div>
-                    
-                    <button className="flex items-center px-4 py-2 text-sm font-medium rounded-lg bg-wine-600 hover:bg-wine-700 text-white">
-                      <Download className="w-4 h-4 mr-2" />
-                      Generate Report
-                    </button>
-                  </div>
-                </div>
-                
-                {/* Custom Tab Navigation - Different from other pages */}
-                <div className="mt-6 border-b border-gray-200 dark:border-gray-700">
-                  <div className="flex space-x-8">
-                    <button
-                      onClick={() => setActiveTab('all')}
-                      className={`pb-4 px-1 text-sm font-medium ${activeTab === 'all' ? 'text-wine-600 dark:text-wine-400 border-b-2 border-wine-600 dark:border-wine-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}`}
-                    >
-                      All Reports
-                    </button>
-                    <button
-                      onClick={() => setActiveTab('financial')}
-                      className={`pb-4 px-1 text-sm font-medium ${activeTab === 'financial' ? 'text-wine-600 dark:text-wine-400 border-b-2 border-wine-600 dark:border-wine-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}`}
-                    >
-                      Financial Reports
-                    </button>
-                    <button
-                      onClick={() => setActiveTab('user')}
-                      className={`pb-4 px-1 text-sm font-medium ${activeTab === 'user' ? 'text-wine-600 dark:text-wine-400 border-b-2 border-wine-600 dark:border-wine-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}`}
-                    >
-                      User Reports
-                    </button>
-                    <button
-                      onClick={() => setActiveTab('system')}
-                      className={`pb-4 px-1 text-sm font-medium ${activeTab === 'system' ? 'text-wine-600 dark:text-wine-400 border-b-2 border-wine-600 dark:border-wine-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}`}
-                    >
-                      System Reports
-                    </button>
                   </div>
                 </div>
               </div>
 
-              {/* Report Content - Different layout with cards in a grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {/* Report Content - Table layout for post reports */}
+              <div className="bg-white dark:bg-gray-800 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 shadow-sm">
                 {isLoading ? (
                   // Loading state
-                  Array(6).fill(0).map((_, index) => (
-                    <div key={index} className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 animate-pulse">
-                      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-4"></div>
-                      <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-2"></div>
-                      <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-2/3"></div>
+                  <div className="p-8 flex justify-center">
+                    <div className="animate-pulse space-y-4 w-full">
+                      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
+                      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
+                      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-5/6"></div>
+                      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
+                      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
                     </div>
-                  ))
+                  </div>
                 ) : filteredReports.length === 0 ? (
                   // Empty state
-                  <div className="col-span-full flex flex-col items-center justify-center py-12 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
-                    <FileText className="w-16 h-16 text-gray-400 dark:text-gray-500 mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 dark:text-white">No reports found</h3>
+                  <div className="flex flex-col items-center justify-center py-12">
+                    <AlertCircle className="w-16 h-16 text-gray-400 dark:text-gray-500 mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-white">No reported posts found</h3>
                     <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                      {searchTerm ? 'Try adjusting your search term' : 'No reports available for this category'}
+                      {searchTerm ? 'Try adjusting your search term' : 'There are no reported posts at this time'}
                     </p>
                   </div>
                 ) : (
-                  // Report cards with a different design than Dashboard cards
-                  filteredReports.map((report) => {
-                    // Determine icon based on category
-                    let Icon = FileText;
-                    if (report.category === 'financial') Icon = DollarSign;
-                    if (report.category === 'user') Icon = Users;
-                    if (report.category === 'system') Icon = BarChart3;
-                    
-                    return (
-                      <div 
-                        key={report.id} 
-                        className="bg-white dark:bg-gray-800 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow duration-200"
-                      >
-                        <div className="p-6">
-                          <div className="flex items-center justify-between mb-4">
-                            <div className="p-2 rounded-lg bg-wine-50 dark:bg-wine-900/30">
-                              <Icon className="w-5 h-5 text-wine-600 dark:text-wine-400" />
-                            </div>
-                            <span className="text-xs font-medium px-2.5 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300">
-                              {report.size}
-                            </span>
-                          </div>
-                          
-                          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">{report.title}</h3>
-                          
-                          <div className="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-4">
-                            <Calendar className="w-4 h-4 mr-1.5" />
-                            <span>Generated on {new Date(report.generatedDate).toLocaleDateString()}</span>
-                          </div>
-                          
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
-                              <Download className="w-4 h-4 mr-1.5" />
-                              <span>{report.downloadCount} downloads</span>
-                            </div>
-                            
-                            <button className="text-wine-600 hover:text-wine-700 dark:text-wine-400 dark:hover:text-wine-300 text-sm font-medium">
-                              Download
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })
+                  // Post reports table
+                  <div className="overflow-x-auto">
+                    <table className="w-full divide-y divide-gray-200 dark:divide-gray-700">
+                      <thead className="bg-gray-50 dark:bg-gray-800">
+                        <tr>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Media</th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Title</th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Report Count</th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date Reported</th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                        {filteredReports.map((report) => (
+                          <tr key={report._id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              {report.media && report.media.length > 0 ? (
+                                  <div 
+                                    className="h-16 w-16 rounded-md overflow-hidden bg-gray-100 dark:bg-gray-700 flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity"
+                                    onClick={() => openMediaPreview(report.media[0].url, report.media[0].type)}
+                                  >
+                                    {report.media[0].type === 'image' ? (
+                                      <img 
+                                        src={report.media[0].url} 
+                                        alt="Post media" 
+                                        className="h-full w-full object-cover"
+                                        onError={(e) => {
+                                          (e.target as HTMLImageElement).src = 'https://via.placeholder.com/150';
+                                        }}
+                                      />
+                                    ) : (
+                                      <Image className="h-8 w-8 text-gray-400" />
+                                    )}
+                                  </div>
+                                ) : (
+                                  <div className="h-16 w-16 rounded-md bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                                    <Image className="h-8 w-8 text-gray-400" />
+                                  </div>
+                                )}
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="text-sm font-medium text-gray-900 dark:text-white">
+                                {report.title || 'Untitled Post'}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+                                <Flag className="w-3 h-3 mr-1" />
+                                {report.reportCount}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                              {new Date(report.createdAt).toLocaleDateString()}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm">
+                              <button 
+                                className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 font-medium flex items-center"
+                                onClick={() => handleDeletePost(report._id)}
+                                disabled={isDeleting}
+                              >
+                                <Trash2 className="w-4 h-4 mr-1" />
+                                Delete Post
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 )}
               </div>
               
-              {/* Report Generation Section - Unique to this page */}
-              <div className="mt-10 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-                <div className="px-6 py-5 border-b border-gray-200 dark:border-gray-700">
-                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Generate Custom Report</h2>
+              {/* Pagination */}
+              <div className="mt-6 flex items-center justify-between">
+                <div className="text-sm text-gray-700 dark:text-gray-300">
+                  Showing <span className="font-medium">{filteredReports.length}</span> of <span className="font-medium">{totalReports}</span> results
                 </div>
-                
-                <div className="p-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Report Type
-                      </label>
-                      <select className="block w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-wine-500 focus:border-transparent">
-                        <option>Financial Summary</option>
-                        <option>User Activity</option>
-                        <option>System Performance</option>
-                        <option>Subscription Analytics</option>
-                      </select>
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Time Period
-                      </label>
-                      <select className="block w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-wine-500 focus:border-transparent">
-                        <option>Last 7 days</option>
-                        <option>Last 30 days</option>
-                        <option>Last 90 days</option>
-                        <option>Custom range</option>
-                      </select>
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Format
-                      </label>
-                      <select className="block w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-wine-500 focus:border-transparent">
-                        <option>PDF</option>
-                        <option>Excel</option>
-                        <option>CSV</option>
-                        <option>JSON</option>
-                      </select>
-                    </div>
-                  </div>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => handlePageChange(page - 1)}
+                    disabled={page === 1}
+                    className={`px-3 py-1 rounded-md text-sm ${page === 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-gray-700 dark:text-gray-500' : 'bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'} border border-gray-300 dark:border-gray-600`}
+                  >
+                    Previous
+                  </button>
                   
-                  <div className="mt-6 flex justify-end">
-                    <button className="px-4 py-2 text-sm font-medium rounded-lg bg-wine-600 hover:bg-wine-700 text-white">
-                      Generate Report
-                    </button>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Report Visualization Section - Unique to this page */}
-              <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-base font-semibold text-gray-900 dark:text-white">Report Categories</h3>
-                    <PieChart className="w-5 h-5 text-gray-400" />
-                  </div>
-                  <div className="h-48 flex items-center justify-center">
-                    <p className="text-gray-500 dark:text-gray-400 text-sm">Chart visualization would go here</p>
-                  </div>
-                </div>
-                
-                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-base font-semibold text-gray-900 dark:text-white">Report Downloads</h3>
-                    <BarChart className="w-5 h-5 text-gray-400" />
-                  </div>
-                  <div className="h-48 flex items-center justify-center">
-                    <p className="text-gray-500 dark:text-gray-400 text-sm">Chart visualization would go here</p>
-                  </div>
-                </div>
-                
-                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-base font-semibold text-gray-900 dark:text-white">Report Generation Trend</h3>
-                    <LineChart className="w-5 h-5 text-gray-400" />
-                  </div>
-                  <div className="h-48 flex items-center justify-center">
-                    <p className="text-gray-500 dark:text-gray-400 text-sm">Chart visualization would go here</p>
-                  </div>
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    // Show pages around current page
+                    let pageNum;
+                    if (totalPages <= 5) {
+                      pageNum = i + 1;
+                    } else if (page <= 3) {
+                      pageNum = i + 1;
+                    } else if (page >= totalPages - 2) {
+                      pageNum = totalPages - 4 + i;
+                    } else {
+                      pageNum = page - 2 + i;
+                    }
+                    
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => handlePageChange(pageNum)}
+                        className={`px-3 py-1 rounded-md text-sm ${page === pageNum ? 'bg-wine-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'} border border-gray-300 dark:border-gray-600`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+                  
+                  <button
+                    onClick={() => handlePageChange(page + 1)}
+                    disabled={page === totalPages}
+                    className={`px-3 py-1 rounded-md text-sm ${page === totalPages ? 'bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-gray-700 dark:text-gray-500' : 'bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'} border border-gray-300 dark:border-gray-600`}
+                  >
+                    Next
+                  </button>
                 </div>
               </div>
             </div>
           </main>
         </div>
       </div>
+      
+      {/* Media Preview Modal */}
+      {modal.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75">
+          <div className="relative max-w-4xl max-h-[90vh] overflow-auto">
+            <button 
+              className="absolute top-4 right-4 p-2 rounded-full bg-black bg-opacity-50 text-white hover:bg-opacity-70 transition-all"
+              onClick={closeMediaPreview}
+            >
+              <X className="w-6 h-6" />
+            </button>
+            
+            {modal.mediaType === 'image' ? (
+              <img 
+                src={modal.mediaUrl} 
+                alt="Media preview" 
+                className="max-w-full max-h-[85vh] object-contain"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = 'https://via.placeholder.com/800x600?text=Image+Not+Available';
+                }}
+              />
+            ) : (
+              <div className="w-full h-[85vh] flex items-center justify-center bg-gray-800">
+                <div className="text-white text-center">
+                  <Image className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+                  <p>Media preview not available</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+      
+      {/* Error message for delete operation */}
+      {deleteError && (
+        <div className="fixed bottom-4 right-4 bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded shadow-md">
+          <div className="flex items-center">
+            <div className="py-1">
+              <svg className="fill-current h-6 w-6 text-red-500 mr-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                <path d="M2.93 17.07A10 10 0 1 1 17.07 2.93 10 10 0 0 1 2.93 17.07zm1.41-1.41A8 8 0 1 0 15.66 4.34 8 8 0 0 0 4.34 15.66zm9.9-8.49L11.41 10l2.83 2.83-1.41 1.41L10 11.41l-2.83 2.83-1.41-1.41L8.59 10 5.76 7.17l1.41-1.41L10 8.59l2.83-2.83 1.41 1.41z"/>
+              </svg>
+            </div>
+            <div>
+              <p>{deleteError}</p>
+            </div>
+            <button 
+              className="ml-auto text-red-700 hover:text-red-900"
+              onClick={() => setDeleteError('')}
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
