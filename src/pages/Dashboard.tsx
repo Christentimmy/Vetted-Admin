@@ -91,6 +91,7 @@ const Dashboard = () => {
     { icon: Home, label: 'Dashboard', path: '/dashboard' },
     { icon: CreditCard, label: 'Subscriptions', path: '/subscriptions' },
     { icon: Users, label: 'User Management', path: '/users' },
+    { icon: Shield, label: 'Admin Management', path: '/admins' },
     { icon: BarChart3, label: 'Analytics', path: '/analytics' },
     { icon: Shield, label: 'Security', path: '/security' },
     { icon: FileText, label: 'Reports', path: '/reports' }
