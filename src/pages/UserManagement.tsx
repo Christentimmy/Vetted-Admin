@@ -25,13 +25,15 @@ import {
   Users,
   BarChart3,
   FileText,
-  Eye
+  Eye,
+  CreditCard
 } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAutoAnimate } from '@formkit/auto-animate/react';
 import { authService } from '../services/auth';
-import { API_BASE_URL } from '../config';
+import { userManagementService, type User as UserType, type PaginationInfo } from '../services/user_management';
+import Snackbar from '../components/Snackbar';
 
 type UserRole = 'admin' | 'moderator' | 'user' | 'support';
 
@@ -49,33 +51,11 @@ const roleColors = {
   support: 'from-emerald-500 to-teal-600'
 };
 
-interface User {
-  _id: string;
-  email?: string;
-  displayName: string;
-  accountStatus: 'active' | 'inactive';
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface PaginationInfo {
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
-  hasMore: boolean;
-}
-
-interface UsersResponse {
-  message: string;
-  data: User[];
-  pagination: PaginationInfo;
-}
 
 const UserManagement = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<UserType[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -90,6 +70,19 @@ const UserManagement = () => {
     limit: 20,
     totalPages: 0,
     hasMore: false
+  });
+  const [showMessageDialog, setShowMessageDialog] = useState(false);
+  const [selectedUserForMessage, setSelectedUserForMessage] = useState<UserType | null>(null);
+  const [messageText, setMessageText] = useState('');
+  const [isSendingMessage, setIsSendingMessage] = useState(false);
+  const [snackbar, setSnackbar] = useState<{
+    isOpen: boolean;
+    message: string;
+    type: 'success' | 'error';
+  }>({
+    isOpen: false,
+    message: '',
+    type: 'success'
   });
   const [parent] = useAutoAnimate();
   
@@ -127,19 +120,7 @@ const UserManagement = () => {
 
   const handleToggleBan = useCallback(async (userId: string) => {
     try {
-      const token = localStorage.getItem('vetted_admin_token');
-      const response = await fetch(`${API_BASE_URL}/admin/toggle-ban`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ userId })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to toggle ban status');
-      }
+      await userManagementService.toggleBan(userId);
 
       // Update the user's status in the local state
       setUsers(prevUsers => 
@@ -170,10 +151,54 @@ const UserManagement = () => {
     }
   };
 
+  const handleSendMessage = async () => {
+    if (!selectedUserForMessage || !messageText.trim()) return;
+
+    try {
+      setIsSendingMessage(true);
+      await userManagementService.sendMessage({
+        email: selectedUserForMessage.email,
+        recipientName: selectedUserForMessage.displayName,
+        message: messageText.trim()
+      });
+
+      // Close dialog and reset state
+      setShowMessageDialog(false);
+      setSelectedUserForMessage(null);
+      setMessageText('');
+      
+      // Show success snackbar
+      showSnackbar('Message sent successfully!', 'success');
+    } catch (error) {
+      console.error('Error sending message:', error);
+      showSnackbar('Failed to send message. Please try again.', 'error');
+    } finally {
+      setIsSendingMessage(false);
+    }
+  };
+
+  const openMessageDialog = (user: UserType) => {
+    setSelectedUserForMessage(user);
+    setShowMessageDialog(true);
+    setSelectedUser(null); // Close the expanded card
+  };
+
+  const showSnackbar = (message: string, type: 'success' | 'error') => {
+    setSnackbar({
+      isOpen: true,
+      message,
+      type
+    });
+  };
+
+  const closeSnackbar = () => {
+    setSnackbar(prev => ({ ...prev, isOpen: false }));
+  };
+
   // Navigation items for the sidebar
   const navItems = [
     { icon: Home, label: 'Dashboard', path: '/dashboard' },
-    { icon: Phone, label: 'Phone Lookup', path: '/phone-lookup' },
+    { icon: CreditCard, label: 'Subscriptions', path: '/subscriptions' },
     { icon: Users, label: 'User Management', path: '/users' },
     { icon: BarChart3, label: 'Analytics', path: '/analytics' },
     { icon: Shield, label: 'Security', path: '/security' },
@@ -187,20 +212,7 @@ const UserManagement = () => {
   const fetchUsers = async (page: number = 1) => {
     try {
       setIsLoading(true);
-      const token = localStorage.getItem('vetted_admin_token');
-      const response = await fetch(`${API_BASE_URL}/admin/all-users?page=${page}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch users');
-      }
-
-      const result: UsersResponse = await response.json();
+      const result = await userManagementService.getAllUsers(page);
       setUsers(result.data);
       setPagination(result.pagination);
     } catch (err) {
@@ -414,13 +426,6 @@ const UserManagement = () => {
                         <ChevronDown className="ml-1.5 w-4 h-4" />
                       )}
                     </button>
-                    <Link
-                      to="/users/new"
-                      className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-gradient-to-r from-wine-600 to-wine-500 hover:from-wine-700 hover:to-wine-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-wine-500 transition-all duration-200"
-                    >
-                      <UserPlus className="-ml-0.5 mr-2 h-4 w-4" />
-                      Add User
-                    </Link>
                   </div>
                 </div>
       
@@ -523,7 +528,7 @@ const UserManagement = () => {
                           {user.displayName}
                         </h3>
                         <p className="text-sm text-gray-500 dark:text-gray-400">
-                          {user.email || 'No email provided'}
+                          {user.email}
                         </p>
                       </div>
                     </div>
@@ -560,7 +565,10 @@ const UserManagement = () => {
                     className="overflow-hidden border-t border-gray-200 dark:border-gray-700"
                   >
                     <div className="p-4 space-y-3">
-                      <button className="w-full flex items-center px-3 py-2 text-sm text-left text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-lg transition-colors">
+                      <button 
+                        onClick={() => openMessageDialog(user)}
+                        className="w-full flex items-center px-3 py-2 text-sm text-left text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-lg transition-colors"
+                      >
                         <Mail className="h-4 w-4 mr-2 text-gray-500" />
                         Send Message
                       </button>
@@ -588,17 +596,6 @@ const UserManagement = () => {
                 ? 'Try adjusting your search or filter criteria'
                 : 'No users in the system yet'}
             </p>
-            {!searchTerm && selectedRole === 'all' && (
-              <div className="mt-6">
-                <Link
-                  to="/users/new"
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-wine-600 hover:bg-wine-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-wine-500"
-                >
-                  <UserPlus className="-ml-1 mr-2 h-4 w-4" />
-                  Add New User
-                </Link>
-              </div>
-            )}
           </div>
         )}
       </div>
@@ -635,6 +632,86 @@ const UserManagement = () => {
           </main>
         </div>
       </div>
+
+      {/* Message Dialog */}
+      {showMessageDialog && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex min-h-screen items-center justify-center p-4">
+            <div className="fixed inset-0 bg-gray-900/80 backdrop-blur-sm" onClick={() => setShowMessageDialog(false)}></div>
+            <div className="relative bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  Send Message
+                </h3>
+                <button
+                  onClick={() => setShowMessageDialog(false)}
+                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                >
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+              
+              <div className="mb-4">
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                  To: <span className="font-medium text-gray-900 dark:text-white">{selectedUserForMessage?.displayName}</span>
+                </p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Email: <span className="font-medium text-gray-900 dark:text-white">{selectedUserForMessage?.email}</span>
+                </p>
+              </div>
+
+              <div className="mb-6">
+                <label htmlFor="message" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Message
+                </label>
+                <textarea
+                  id="message"
+                  rows={4}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-wine-500 focus:border-transparent resize-none"
+                  placeholder="Type your message here..."
+                  value={messageText}
+                  onChange={(e) => setMessageText(e.target.value)}
+                />
+              </div>
+
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => setShowMessageDialog(false)}
+                  className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-wine-500 focus:ring-offset-2"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSendMessage}
+                  disabled={!messageText.trim() || isSendingMessage}
+                  className="flex-1 px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-wine-600 hover:bg-wine-700 focus:outline-none focus:ring-2 focus:ring-wine-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                >
+                  {isSendingMessage ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Sending...
+                    </>
+                  ) : (
+                    'Send Message'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Snackbar */}
+      <Snackbar
+        isOpen={snackbar.isOpen}
+        onClose={closeSnackbar}
+        message={snackbar.message}
+        type={snackbar.type}
+        duration={4000}
+      />
     </div>
   );
 };

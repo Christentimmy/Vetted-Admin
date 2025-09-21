@@ -21,7 +21,8 @@ import {
   DollarSign,
   Eye,
   ChevronDown,
-  Filter
+  Filter,
+  CreditCard
 } from 'lucide-react';
 
 interface DashboardStats {
@@ -88,7 +89,7 @@ const Dashboard = () => {
   // Navigation items for the sidebar
   const navItems = [
     { icon: Home, label: 'Dashboard', path: '/dashboard' },
-    { icon: Phone, label: 'Phone Lookup', path: '/phone-lookup' },
+    { icon: CreditCard, label: 'Subscriptions', path: '/subscriptions' },
     { icon: Users, label: 'User Management', path: '/users' },
     { icon: BarChart3, label: 'Analytics', path: '/analytics' },
     { icon: Shield, label: 'Security', path: '/security' },
