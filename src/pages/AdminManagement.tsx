@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { 
   Search, 
-  User, 
   Plus, 
   Filter, 
   ChevronDown, 
@@ -11,30 +10,24 @@ import {
   MoreVertical, 
   Shield, 
   ShieldCheck, 
-  UserPlus,
-  Mail,
   Phone,
-  Calendar,
   Settings,
-  LogOut,
   Bell,
   Moon,
   Sun,
   Menu,
   Home,
   Users,
-  BarChart3,
   FileText,
-  Eye,
   CreditCard,
-  Trash2
+  Trash2,
+  Headphones
 } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAutoAnimate } from '@formkit/auto-animate/react';
 import { authService } from '../services/auth';
-import { adminManagementService, Admin, PaginationInfo, AdminsResponse } from '../services/admin_management';
-import { API_BASE_URL } from '../config';
+import { adminManagementService, Admin, PaginationInfo } from '../services/admin_management';
 import Snackbar from '../components/Snackbar';
 
 const roleIcons = {
@@ -237,11 +230,11 @@ const AdminManagement = () => {
   const navItems = [
     { icon: Home, label: 'Dashboard', path: '/dashboard' },
     { icon: CreditCard, label: 'Subscriptions', path: '/subscriptions' },
-    { icon: Users, label: 'User Management', path: '/users' },
-    { icon: Shield, label: 'Admin Management', path: '/admins' },
-    { icon: BarChart3, label: 'Analytics', path: '/analytics' },
-    { icon: FileText, label: 'Reports', path: '/reports' }
-  ] as const;
+    { icon: Users, label: 'Users', path: '/users' },
+    { icon: FileText, label: 'Reports', path: '/reports' },
+    { icon: Headphones, label: 'Support', path: '/support' },
+    { icon: Settings, label: 'Settings', path: '/settings' },
+  ];
   
   // Get the current path to determine active nav item
   const currentPath = location.pathname;
@@ -502,20 +495,6 @@ const AdminManagement = () => {
                                 <div className="flex-shrink-0 h-6 w-6"></div>
                                 <span className="ml-2">Role</span>
                               </div>
-                            </th>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                              <div className="flex items-center">
-                                <div className="flex-shrink-0 h-6 w-6"></div>
-                                <span className="ml-2">Status</span>
-                              </div>
-                            </th>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                              <div className="flex items-center">
-                                <span>Created</span>
-                              </div>
-                            </th>
-                            <th scope="col" className="relative px-6 py-3">
-                              <span className="sr-only">Actions</span>
                             </th>
                           </tr>
                         </thead>
