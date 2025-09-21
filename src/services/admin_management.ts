@@ -64,23 +64,24 @@ export const adminManagementService = {
 
   /**
    * Toggle account status for an admin
-   * @param adminId - ID of the admin to toggle status
+   * @param userId - ID of the admin to toggle status
    * @returns Promise<void>
    */
-  async toggleAdminStatus(adminId: string): Promise<void> {
+  async toggleAdminStatus(userId: string): Promise<void> {
     try {
       const token = localStorage.getItem('vetted_admin_token');
-      const response = await fetch(`${API_BASE_URL}/admin/toggle-admin-status`, {
+      const response = await fetch(`${API_BASE_URL}/admin/toggle-active`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ adminId })
+        body: JSON.stringify({ userId })
       });
 
       if (!response.ok) {
-        throw new Error('Failed to toggle admin status');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to toggle admin status');
       }
     } catch (error) {
       console.error('Error toggling admin status:', error);
@@ -90,23 +91,24 @@ export const adminManagementService = {
 
   /**
    * Delete an admin
-   * @param adminId - ID of the admin to delete
+   * @param userId - ID of the admin to delete
    * @returns Promise<void>
    */
-  async deleteAdmin(adminId: string): Promise<void> {
+  async deleteAdmin(userId: string): Promise<void> {
     try {
       const token = localStorage.getItem('vetted_admin_token');
       const response = await fetch(`${API_BASE_URL}/admin/delete-admin`, {
-        method: 'DELETE',
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ adminId })
+        body: JSON.stringify({ userId })
       });
 
       if (!response.ok) {
-        throw new Error('Failed to delete admin');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to delete admin');
       }
     } catch (error) {
       console.error('Error deleting admin:', error);
