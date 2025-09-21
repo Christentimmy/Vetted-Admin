@@ -1,9 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Headphones, 
-  MessageSquare, 
   User, 
   ChevronDown,
   ChevronUp,
@@ -17,47 +16,34 @@ import {
   Sun,
   Menu,
   X,
-  Phone
+  Phone,
+  Image as ImageIcon
 } from 'lucide-react';
-
-// Mock data for support tickets
-const mockTickets = [
-  {
-    id: 1,
-    user: 'John Doe',
-    email: 'john@example.com',
-    subject: 'Login issues',
-    message: 'I am unable to login to my account.',
-    status: 'open',
-    date: '2025-09-20',
-    priority: 'high'
-  },
-  {
-    id: 2,
-    user: 'Jane Smith',
-    email: 'jane@example.com',
-    subject: 'Payment problem',
-    message: 'My payment was not processed correctly.',
-    status: 'in-progress',
-    date: '2025-09-19',
-    priority: 'medium'
-  },
-  {
-    id: 3,
-    user: 'Bob Johnson',
-    email: 'bob@example.com',
-    subject: 'Feature request',
-    message: 'Can you add dark mode to the app?',
-    status: 'closed',
-    date: '2025-09-18',
-    priority: 'low'
-  }
-];
+import { fetchAllTickets } from '../services/support';
+import type { SupportTicket } from '../services/support';
 
 const Support = () => {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [tickets, setTickets] = useState<SupportTicket[]>([]);
+  const [expandedTicket, setExpandedTicket] = useState<string | null>(null);
   const location = useLocation();
+
+  useEffect(() => {
+    const loadTickets = async () => {
+      try {
+        const data = await fetchAllTickets();
+        setTickets(data);
+      } catch (error) {
+        console.error('Failed to load tickets:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadTickets();
+  }, []);
 
   const toggleDarkMode = () => {
     setIsDarkMode(!isDarkMode);
@@ -65,6 +51,10 @@ const Support = () => {
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
+  };
+
+  const toggleTicket = (id: string) => {
+    setExpandedTicket(expandedTicket === id ? null : id);
   };
 
   // Navigation items for the sidebar
@@ -76,14 +66,6 @@ const Support = () => {
     { icon: Headphones, label: 'Support', path: '/support' },
     { icon: FileText, label: 'Reports', path: '/reports' }
   ] as const;
-  const [expandedTicket, setExpandedTicket] = useState<number | null>(null);
-  
-  // Filter tickets (placeholder for future implementation)
-  const filteredTickets = mockTickets;
-
-  const toggleTicket = (id: number) => {
-    setExpandedTicket(expandedTicket === id ? null : id);
-  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -91,24 +73,36 @@ const Support = () => {
         return <span className="px-2 py-1 text-xs font-medium text-red-800 bg-red-100 rounded-full">Open</span>;
       case 'in-progress':
         return <span className="px-2 py-1 text-xs font-medium text-yellow-800 bg-yellow-100 rounded-full">In Progress</span>;
+      case 'resolved':
       case 'closed':
         return <span className="px-2 py-1 text-xs font-medium text-green-800 bg-green-100 rounded-full">Resolved</span>;
       default:
-        return null;
+        return <span className="px-2 py-1 text-xs font-medium text-gray-800 bg-gray-100 rounded-full">{status}</span>;
     }
   };
 
   const getPriorityBadge = (priority: string) => {
     switch (priority) {
       case 'high':
+      case 'urgent':
         return <span className="px-2 py-1 text-xs font-medium text-white bg-red-500 rounded-full">High</span>;
       case 'medium':
         return <span className="px-2 py-1 text-xs font-medium text-white bg-yellow-500 rounded-full">Medium</span>;
       case 'low':
         return <span className="px-2 py-1 text-xs font-medium text-white bg-gray-500 rounded-full">Low</span>;
       default:
-        return null;
+        return <span className="px-2 py-1 text-xs font-medium text-white bg-gray-400 rounded-full">{priority}</span>;
     }
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
 
   return (
@@ -219,51 +213,58 @@ const Support = () => {
                     <p className="text-gray-600 dark:text-gray-400">Manage and respond to customer inquiries and issues</p>
                   </div>
 
-                  <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
-                    {filteredTickets.length === 0 ? (
+                  <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
+                    {isLoading ? (
+                      <div className="p-8 text-center">
+                        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
+                        <p className="mt-4 text-sm text-gray-500 dark:text-gray-400">Loading tickets...</p>
+                      </div>
+                    ) : tickets.length === 0 ? (
                       <div className="p-8 text-center">
                         <Headphones className="w-12 h-12 mx-auto text-gray-400" />
                         <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">No tickets found</h3>
                         <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                          Get started by creating a new ticket
+                          There are no support tickets at the moment
                         </p>
-                        <div className="mt-6">
-                          <button className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                            <MessageSquare className="w-5 h-5 mr-2 -ml-1" />
-                            New Ticket
-                          </button>
-                        </div>
                       </div>
                     ) : (
                       <ul className="divide-y divide-gray-200 dark:divide-gray-700">
-                        {filteredTickets.map((ticket) => (
-                          <li key={ticket.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                        {tickets.map((ticket) => (
+                          <li key={ticket._id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                             <div 
                               className="flex items-center justify-between px-6 py-4 cursor-pointer"
-                              onClick={() => toggleTicket(ticket.id)}
+                              onClick={() => toggleTicket(ticket._id)}
                             >
                               <div className="flex items-center">
-                                <div className="flex-shrink-0 w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
-                                  <User className="w-5 h-5 text-blue-600 dark:text-blue-300" />
-                                </div>
+                                {ticket.user?.avatar ? (
+                                  <img 
+                                    src={ticket.user.avatar} 
+                                    alt={ticket.user.displayName} 
+                                    className="w-10 h-10 rounded-full object-cover"
+                                  />
+                                ) : (
+                                  <div className="flex-shrink-0 w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center text-blue-600 dark:text-blue-300">
+                                    <User className="w-5 h-5" />
+                                  </div>
+                                )}
                                 <div className="ml-4">
                                   <div className="flex items-center space-x-2">
-                                    <p className="text-sm font-medium text-gray-900 dark:text-white">{ticket.user}</p>
-                                    <span className="text-xs text-gray-500">•</span>
-                                    <p className="text-sm text-gray-500 dark:text-gray-400">{ticket.email}</p>
+                                    <p className="text-sm font-medium text-gray-900 dark:text-white">
+                                      {ticket.user?.displayName || 'Unknown User'}
+                                    </p>
                                   </div>
-                                  <p className="text-sm font-medium text-gray-900 dark:text-white">{ticket.subject}</p>
+                                  <p className="text-sm font-medium text-gray-900 dark:text-white mt-1">{ticket.subject}</p>
                                   <div className="flex items-center mt-1 space-x-2">
                                     {getStatusBadge(ticket.status)}
                                     {getPriorityBadge(ticket.priority)}
                                     <span className="text-xs text-gray-500 dark:text-gray-400">
-                                      {new Date(ticket.date).toLocaleDateString()}
+                                      {formatDate(ticket.createdAt)}
                                     </span>
                                   </div>
                                 </div>
                               </div>
                               <div className="flex items-center">
-                                {expandedTicket === ticket.id ? (
+                                {expandedTicket === ticket._id ? (
                                   <ChevronUp className="w-5 h-5 text-gray-400" />
                                 ) : (
                                   <ChevronDown className="w-5 h-5 text-gray-400" />
@@ -271,7 +272,7 @@ const Support = () => {
                               </div>
                             </div>
                             <AnimatePresence>
-                              {expandedTicket === ticket.id && (
+                              {expandedTicket === ticket._id && (
                                 <motion.div
                                   initial={{ opacity: 0, height: 0 }}
                                   animate={{ opacity: 1, height: 'auto' }}
@@ -279,14 +280,62 @@ const Support = () => {
                                   className="px-6 pb-4 overflow-hidden"
                                 >
                                   <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                                    <p className="text-sm text-gray-700 dark:text-gray-300">{ticket.message}</p>
+                                    <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line">
+                                      {ticket.description}
+                                    </p>
+                                    
+                                    {ticket.attachments && ticket.attachments.length > 0 && (
+                                      <div className="mt-4">
+                                        <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 flex items-center">
+                                          <ImageIcon className="w-4 h-4 mr-1" />
+                                          Attachments ({ticket.attachments.length})
+                                        </h4>
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 mt-2">
+                                          {ticket.attachments.map((attachment, index) => (
+                                            <a 
+                                              key={index} 
+                                              href={attachment} 
+                                              target="_blank" 
+                                              rel="noopener noreferrer"
+                                              className="block rounded-md overflow-hidden border border-gray-200 dark:border-gray-600 hover:border-blue-500 transition-colors"
+                                            >
+                                              <img 
+                                                src={attachment} 
+                                                alt={`Attachment ${index + 1}`} 
+                                                className="w-full h-24 object-cover"
+                                                onError={(e) => {
+                                                  const target = e.target as HTMLImageElement;
+                                                  target.onerror = null;
+                                                  target.src = 'https://via.placeholder.com/150?text=Preview+Not+Available';
+                                                }}
+                                              />
+                                            </a>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
+                                    
                                     <div className="flex justify-end mt-4 space-x-2">
-                                      <button className="px-3 py-1 text-sm text-white bg-red-500 rounded-md hover:bg-red-600">
-                                        Close Ticket
-                                      </button>
-                                      <button className="px-3 py-1 text-sm text-white bg-blue-600 rounded-md hover:bg-blue-700">
+                                      <button 
+                                        className="px-3 py-1 text-sm text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          // Handle respond action
+                                        }}
+                                      >
                                         Respond
                                       </button>
+                                      {ticket.status !== 'closed' && ticket.status !== 'resolved' && (
+                                        <button 
+                                          className="px-3 py-1 text-sm text-white bg-green-600 rounded-md hover:bg-green-700 transition-colors"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            // Handle mark as resolved action
+                                          }}
+                                        >
+                                          Mark as Resolved
+                                        </button>
+                                      )}
                                     </div>
                                   </div>
                                 </motion.div>
