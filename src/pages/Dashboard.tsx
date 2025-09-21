@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authService } from '../services/auth';
+import { dashboardService } from '../services/dashboard';
+import type { RecentLookup } from '../services/dashboard';
 import { 
   Search, 
   Bell, 
@@ -16,65 +18,18 @@ import {
   Shield,
   BarChart3,
   FileText,
-  AlertTriangle,
   DollarSign,
-  TrendingUp,
   Eye,
-  Filter,
-  ChevronDown
+  ChevronDown,
+  Filter
 } from 'lucide-react';
 
-interface PhoneRecord {
-  id: string;
-  phoneNumber: string;
-  name: string;
-  location: string;
-  riskLevel: 'Low' | 'Medium' | 'High';
-  date: string;
+interface DashboardStats {
+  totalUsers: number;
+  todaySearches: number;
+  totalPosts: number;
+  totalActiveSubscriptions: number;
 }
-
-const mockPhoneData: PhoneRecord[] = [
-  {
-    id: '1',
-    phoneNumber: '+1 (555) 123-4567',
-    name: 'John Smith',
-    location: 'New York, NY',
-    riskLevel: 'Low',
-    date: '2025-01-08'
-  },
-  {
-    id: '2',
-    phoneNumber: '+1 (555) 987-6543',
-    name: 'Sarah Johnson',
-    location: 'Los Angeles, CA',
-    riskLevel: 'Medium',
-    date: '2025-01-08'
-  },
-  {
-    id: '3',
-    phoneNumber: '+1 (555) 456-7890',
-    name: 'Michael Brown',
-    location: 'Chicago, IL',
-    riskLevel: 'High',
-    date: '2025-01-07'
-  },
-  {
-    id: '4',
-    phoneNumber: '+1 (555) 321-9876',
-    name: 'Emily Davis',
-    location: 'Houston, TX',
-    riskLevel: 'Low',
-    date: '2025-01-07'
-  },
-  {
-    id: '5',
-    phoneNumber: '+1 (555) 654-3210',
-    name: 'Robert Wilson',
-    location: 'Phoenix, AZ',
-    riskLevel: 'Medium',
-    date: '2025-01-06'
-  }
-];
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -82,6 +37,12 @@ const Dashboard = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRiskFilter, setSelectedRiskFilter] = useState('All');
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isTableLoading, setIsTableLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [recentLookups, setRecentLookups] = useState<RecentLookup[]>([]);
+  const [tableError] = useState<string | null>(null);
 
   const toggleDarkMode = () => {
     setIsDarkMode(!isDarkMode);
@@ -91,38 +52,38 @@ const Dashboard = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
 
-  const handleLogout = async () => {
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setIsLoading(true);
+        const [statsData, lookupsData] = await Promise.all([
+          dashboardService.getDashboardStats(),
+          dashboardService.getRecentLookups()
+        ]);
+        setStats(statsData);
+        setRecentLookups(lookupsData);
+      } catch (err) {
+        setError('Failed to load dashboard data');
+        console.error('Error fetching dashboard data:', err);
+      } finally {
+        setIsLoading(false);
+        setIsTableLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
+
+  // Logout handler - will be used when implementing logout functionality
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const handleLogout = useCallback(async () => {
     try {
       await authService.logout();
       navigate('/login');
     } catch (error) {
       console.error('Logout failed:', error);
     }
-  };
-
-  const filteredData = mockPhoneData.filter(record => {
-    const matchesSearch = 
-      record.phoneNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      record.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      record.location.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesFilter = selectedRiskFilter === 'All' || record.riskLevel === selectedRiskFilter;
-    
-    return matchesSearch && matchesFilter;
-  });
-
-  const getRiskColor = (level: string) => {
-    switch (level) {
-      case 'High':
-        return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
-      case 'Medium':
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
-      case 'Low':
-        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-      default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200';
-    }
-  };
+  }, [navigate]);
 
   const sidebarItems = [
     { icon: Home, label: 'Dashboard', active: true },
@@ -236,78 +197,89 @@ const Dashboard = () => {
 
               {/* Metrics Cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Users</p>
-                      <p className="text-2xl font-semibold text-gray-900 dark:text-white">24,563</p>
-                      <p className="text-xs text-green-600 dark:text-green-400 flex items-center mt-1">
-                        <TrendingUp className="w-3 h-3 mr-1" />
-                        +12.5% from last month
-                      </p>
+                {isLoading ? (
+                  // Loading state
+                  Array(4).fill(0).map((_, index) => (
+                    <div key={index} className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 animate-pulse">
+                      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-4"></div>
+                      <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-2"></div>
+                      <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-2/3"></div>
                     </div>
-                    <div className="p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
-                      <Users className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-                    </div>
+                  ))
+                ) : error ? (
+                  // Error state
+                  <div className="col-span-4 bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 rounded-xl p-6">
+                    <p className="text-red-600 dark:text-red-400">{error}</p>
                   </div>
-                </div>
+                ) : stats ? (
+                  // Success state
+                  <>
+                    <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Users</p>
+                          <p className="text-2xl font-semibold text-gray-900 dark:text-white">
+                            {stats.totalUsers.toLocaleString()}
+                          </p>
+                        </div>
+                        <div className="p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
+                          <Users className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                        </div>
+                      </div>
+                    </div>
 
-                <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Recent Searches</p>
-                      <p className="text-2xl font-semibold text-gray-900 dark:text-white">8,942</p>
-                      <p className="text-xs text-green-600 dark:text-green-400 flex items-center mt-1">
-                        <TrendingUp className="w-3 h-3 mr-1" />
-                        +8.2% from yesterday
-                      </p>
+                    <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Today's Searches</p>
+                          <p className="text-2xl font-semibold text-gray-900 dark:text-white">
+                            {stats.todaySearches.toLocaleString()}
+                          </p>
+                        </div>
+                        <div className="p-3 bg-wine-50 dark:bg-wine-900/30 rounded-lg">
+                          <Eye className="w-6 h-6 text-wine-600 dark:text-wine-400" />
+                        </div>
+                      </div>
                     </div>
-                    <div className="p-3 bg-wine-50 dark:bg-wine-900/30 rounded-lg">
-                      <Eye className="w-6 h-6 text-wine-600 dark:text-wine-400" />
-                    </div>
-                  </div>
-                </div>
 
-                <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Flagged Reports</p>
-                      <p className="text-2xl font-semibold text-gray-900 dark:text-white">127</p>
-                      <p className="text-xs text-red-600 dark:text-red-400 flex items-center mt-1">
-                        <AlertTriangle className="w-3 h-3 mr-1" />
-                        +3 new today
-                      </p>
+                    <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Posts</p>
+                          <p className="text-2xl font-semibold text-gray-900 dark:text-white">
+                            {stats.totalPosts.toLocaleString()}
+                          </p>
+                        </div>
+                        <div className="p-3 bg-green-50 dark:bg-green-900/30 rounded-lg">
+                          <FileText className="w-6 h-6 text-green-600 dark:text-green-400" />
+                        </div>
+                      </div>
                     </div>
-                    <div className="p-3 bg-red-50 dark:bg-red-900/30 rounded-lg">
-                      <Shield className="w-6 h-6 text-red-600 dark:text-red-400" />
-                    </div>
-                  </div>
-                </div>
 
-                <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Revenue</p>
-                      <p className="text-2xl font-semibold text-gray-900 dark:text-white">$42,891</p>
-                      <p className="text-xs text-green-600 dark:text-green-400 flex items-center mt-1">
-                        <TrendingUp className="w-3 h-3 mr-1" />
-                        +15.3% this month
-                      </p>
+                    <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Active Subscriptions</p>
+                          <p className="text-2xl font-semibold text-gray-900 dark:text-white">
+                            {stats.totalActiveSubscriptions.toLocaleString()}
+                          </p>
+                        </div>
+                        <div className="p-3 bg-purple-50 dark:bg-purple-900/30 rounded-lg">
+                          <DollarSign className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+                        </div>
+                      </div>
                     </div>
-                    <div className="p-3 bg-green-50 dark:bg-green-900/30 rounded-lg">
-                      <DollarSign className="w-6 h-6 text-green-600 dark:text-green-400" />
-                    </div>
-                  </div>
-                </div>
+                  </>
+                ) : null}
               </div>
 
-              {/* Phone Lookup Table */}
+              {/* Recent Lookups Table */}
               <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
                 <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                      <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Phone Number Lookups</h2>
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Recent search results and risk assessments</p>
+                      <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Recent Lookups</h2>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Recently performed phone number lookups</p>
                     </div>
                     <div className="mt-4 sm:mt-0 flex space-x-3">
                       <div className="relative">
@@ -332,56 +304,71 @@ const Dashboard = () => {
                 </div>
 
                 <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                    <thead className="bg-gray-50 dark:bg-gray-900">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                          Phone Number
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                          Name
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                          Location
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                          Risk Level
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                          Date
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                      {filteredData.map((record) => (
-                        <tr key={record.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                            {record.phoneNumber}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                            {record.name}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
-                            {record.location}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getRiskColor(record.riskLevel)}`}>
-                              {record.riskLevel}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
-                            {new Date(record.date).toLocaleDateString()}
-                          </td>
-                        </tr>
+                  {isTableLoading ? (
+                    <div className="p-6">
+                      {Array(5).fill(0).map((_, index) => (
+                        <div key={index} className="animate-pulse flex space-x-4 mb-4">
+                          <div className="flex-1 space-y-4 py-1">
+                            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
+                            <div className="space-y-2">
+                              <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                            </div>
+                          </div>
+                        </div>
                       ))}
-                    </tbody>
-                  </table>
+                    </div>
+                  ) : tableError ? (
+                    <div className="p-6 text-red-600 dark:text-red-400">{tableError}</div>
+                  ) : recentLookups.length === 0 ? (
+                    <div className="p-6 text-gray-500 dark:text-gray-400">No recent lookups found</div>
+                  ) : (
+                    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                      <thead className="bg-gray-50 dark:bg-gray-800">
+                        <tr>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Phone Number</th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">User</th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Results</th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date</th>
+                          <th scope="col" className="relative px-6 py-3">
+                            <span className="sr-only">Actions</span>
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                        {recentLookups.map((lookup) => (
+                          <tr key={lookup._id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                              {lookup.query.phone}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                              {lookup.userId?.displayName || 'N/A'}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                lookup.resultCount > 0 
+                                  ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                                  : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                              }`}>
+                                {lookup.resultCount} {lookup.resultCount === 1 ? 'result' : 'results'}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                              {new Date(lookup.createdAt).toLocaleString()}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                              {/* View Details button removed as per requirements */}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
                 </div>
 
-                {filteredData.length === 0 && (
+                {recentLookups.length === 0 && !isTableLoading && !tableError && (
                   <div className="text-center py-12">
                     <Search className="mx-auto w-12 h-12 text-gray-400 mb-4" />
-                    <p className="text-sm text-gray-500 dark:text-gray-400">No results found for your search.</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">No recent lookups found.</p>
                   </div>
                 )}
               </div>
