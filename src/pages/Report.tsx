@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { authService } from '../services/auth';
 import { reportService, PostReport } from '../services/report';
@@ -14,14 +14,14 @@ import {
   Phone,
   Users,
   Shield,
-  BarChart3,
   FileText,
   CreditCard,
-  Flag,
   Image,
   AlertCircle,
-  Trash2
+  Trash2,
+  Flag
 } from 'lucide-react';
+import { useDashboardLayout } from '../components/DashboardLayoutContext';
 
 // Define modal state interface
 interface ModalState {
@@ -33,6 +33,7 @@ interface ModalState {
 
 const Report = () => {
   const navigate = useNavigate();
+  const layout = useDashboardLayout();
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -148,7 +149,6 @@ const Report = () => {
     { icon: Home, label: 'Dashboard', path: '/dashboard' },
     { icon: CreditCard, label: 'Subscriptions', path: '/subscriptions' },
     { icon: Users, label: 'User Management', path: '/users' },
-    { icon: BarChart3, label: 'Analytics', path: '/analytics' },
     { icon: Shield, label: 'Security', path: '/security' },
     { icon: FileText, label: 'Reports', path: '/reports' }
   ] as const;
@@ -156,6 +156,210 @@ const Report = () => {
   // Get the current path to determine active nav item
   const location = useLocation();
   const currentPath = location.pathname;
+
+  if (layout?.isInLayout) {
+    return (
+      <div className="container mx-auto px-4 py-6">
+        <div className="mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Reported Posts</h1>
+              <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">Manage posts that have been reported by users</p>
+            </div>
+            <div className="mt-4 sm:mt-0">
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+                Total reported posts: <span className="font-semibold">{totalReports}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-gray-800 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 shadow-sm">
+          {isLoading ? (
+            <div className="p-8 flex justify-center">
+              <div className="animate-pulse space-y-4 w-full">
+                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
+                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
+                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-5/6"></div>
+                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
+                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
+              </div>
+            </div>
+          ) : filteredReports.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12">
+              <AlertCircle className="w-16 h-16 text-gray-400 dark:text-gray-500 mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white">No reported posts found</h3>
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                {searchTerm ? 'Try adjusting your search term' : 'There are no reported posts at this time'}
+              </p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead className="bg-gray-50 dark:bg-gray-800">
+                  <tr>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Media</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Title</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Report Count</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date Reported</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                  {filteredReports.map((report) => (
+                    <tr key={report._id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {report.media && report.media.length > 0 ? (
+                          <div 
+                            className="h-16 w-16 rounded-md overflow-hidden bg-gray-100 dark:bg-gray-700 flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity"
+                            onClick={() => openMediaPreview(report.media[0].url, report.media[0].type)}
+                          >
+                            {report.media[0].type === 'image' ? (
+                              <img 
+                                src={report.media[0].url} 
+                                alt="Post media" 
+                                className="h-full w-full object-cover"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).src = 'https://via.placeholder.com/150';
+                                }}
+                              />
+                            ) : (
+                              <Image className="h-8 w-8 text-gray-400" />
+                            )}
+                          </div>
+                        ) : (
+                          <div className="h-16 w-16 rounded-md bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                            <Image className="h-8 w-8 text-gray-400" />
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="text-sm font-medium text-gray-900 dark:text-white">
+                          {report.title || 'Untitled Post'}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+                          <Flag className="w-3 h-3 mr-1" />
+                          {report.reportCount}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                        {new Date(report.createdAt).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <button 
+                          className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 font-medium flex items-center"
+                          onClick={() => handleDeletePost(report._id)}
+                          disabled={isDeleting}
+                        >
+                          <Trash2 className="w-4 h-4 mr-1" />
+                          Delete Post
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        <div className="mt-6 flex items-center justify-between">
+          <div className="text-sm text-gray-700 dark:text-gray-300">
+            Showing <span className="font-medium">{filteredReports.length}</span> of <span className="font-medium">{totalReports}</span> results
+          </div>
+          <div className="flex space-x-2">
+            <button
+              onClick={() => handlePageChange(page - 1)}
+              disabled={page === 1}
+              className={`px-3 py-1 rounded-md text-sm ${page === 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-gray-700 dark:text-gray-500' : 'bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'} border border-gray-300 dark:border-gray-600`}
+            >
+              Previous
+            </button>
+            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+              let pageNum;
+              if (totalPages <= 5) {
+                pageNum = i + 1;
+              } else if (page <= 3) {
+                pageNum = i + 1;
+              } else if (page >= totalPages - 2) {
+                pageNum = totalPages - 4 + i;
+              } else {
+                pageNum = page - 2 + i;
+              }
+              return (
+                <button
+                  key={pageNum}
+                  onClick={() => handlePageChange(pageNum)}
+                  className={`px-3 py-1 rounded-md text-sm ${page === pageNum ? 'bg-wine-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'} border border-gray-300 dark:border-gray-600`}
+                >
+                  {pageNum}
+                </button>
+              );
+            })}
+            <button
+              onClick={() => handlePageChange(page + 1)}
+              disabled={page === totalPages}
+              className={`px-3 py-1 rounded-md text-sm ${page === totalPages ? 'bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-gray-700 dark:text-gray-500' : 'bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'} border border-gray-300 dark:border-gray-600`}
+            >
+              Next
+            </button>
+          </div>
+        </div>
+
+        {modal.isOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75">
+            <div className="relative max-w-4xl max-h-[90vh] overflow-auto">
+              <button 
+                className="absolute top-4 right-4 p-2 rounded-full bg-black bg-opacity-50 text-white hover:bg-opacity-70 transition-all"
+                onClick={closeMediaPreview}
+              >
+                <X className="w-6 h-6" />
+              </button>
+              {modal.mediaType === 'image' ? (
+                <img 
+                  src={modal.mediaUrl} 
+                  alt="Media preview" 
+                  className="max-w-full max-h-[85vh] object-contain"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = 'https://via.placeholder.com/800x600?text=Image+Not+Available';
+                  }}
+                />
+              ) : (
+                <div className="w-full h-[85vh] flex items-center justify-center bg-gray-800">
+                  <div className="text-white text-center">
+                    <Image className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+                    <p>Media preview not available</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+        {deleteError && (
+          <div className="fixed bottom-4 right-4 bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded shadow-md">
+            <div className="flex items-center">
+              <div className="py-1 mr-4">
+                <svg className="fill-current h-6 w-6 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                  <path d="M2.93 17.07A10 10 0 1 1 17.07 2.93 10 10 0 0 1 2.93 17.07zm1.41-1.41A8 8 0 1 0 15.66 4.34 8 8 0 0 0 4.34 15.66zm9.9-8.49L11.41 10l2.83 2.83-1.41 1.41L10 11.41l-2.83 2.83-1.41-1.41L8.59 10 5.76 7.17l1.41-1.41L10 8.59l2.83-2.83 1.41 1.41z"/>
+                </svg>
+              </div>
+              <div>
+                <p>{deleteError}</p>
+              </div>
+              <button 
+                className="ml-auto text-red-700 hover:text-red-900"
+                onClick={() => setDeleteError('')}
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className={isDarkMode ? 'dark' : ''}>

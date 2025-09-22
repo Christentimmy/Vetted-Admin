@@ -2,20 +2,15 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { 
   Search, 
   User, 
-  Plus, 
   Filter, 
   ChevronDown, 
   ChevronUp, 
-  Check, 
   X, 
   MoreVertical, 
-  Shield, 
-  ShieldCheck, 
-  UserPlus,
+  Shield,
   Mail,
   Phone,
   Calendar,
-  Settings,
   LogOut,
   Bell,
   Moon,
@@ -23,9 +18,7 @@ import {
   Menu,
   Home,
   Users,
-  BarChart3,
   FileText,
-  Eye,
   CreditCard
 } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
@@ -34,27 +27,15 @@ import { useAutoAnimate } from '@formkit/auto-animate/react';
 import { authService } from '../services/auth';
 import { userManagementService, type User as UserType, type PaginationInfo } from '../services/user_management';
 import Snackbar from '../components/Snackbar';
+import { useDashboardLayout } from '../components/DashboardLayoutContext';
 
-type UserRole = 'admin' | 'moderator' | 'user' | 'support';
-
-const roleIcons = {
-  admin: <Shield className="w-4 h-4" />,
-  moderator: <ShieldCheck className="w-4 h-4" />,
-  user: <User className="w-4 h-4" />,
-  support: <Phone className="w-4 h-4" />
-};
-
-const roleColors = {
-  admin: 'from-purple-500 to-indigo-600',
-  moderator: 'from-blue-500 to-cyan-600',
-  user: 'from-gray-500 to-gray-600',
-  support: 'from-emerald-500 to-teal-600'
-};
+ 
 
 
 const UserManagement = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const layout = useDashboardLayout();
   const [users, setUsers] = useState<UserType[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -86,20 +67,7 @@ const UserManagement = () => {
   });
   const [parent] = useAutoAnimate();
   
-  const roles: UserRole[] = ['admin', 'moderator', 'user', 'support'];
   
-  const statusVariants = {
-    active: {
-      backgroundColor: 'rgba(16, 185, 129, 0.1)',
-      color: '#10B981',
-      icon: <Check className="w-3 h-3 mr-1" />
-    },
-    inactive: {
-      backgroundColor: 'rgba(107, 114, 128, 0.1)',
-      color: '#6B7280',
-      icon: <X className="w-3 h-3 mr-1" />
-    }
-  };
 
   const toggleDarkMode = () => {
     setIsDarkMode(!isDarkMode);
@@ -200,7 +168,6 @@ const UserManagement = () => {
     { icon: Home, label: 'Dashboard', path: '/dashboard' },
     { icon: CreditCard, label: 'Subscriptions', path: '/subscriptions' },
     { icon: Users, label: 'User Management', path: '/users' },
-    { icon: BarChart3, label: 'Analytics', path: '/analytics' },
     { icon: Shield, label: 'Security', path: '/security' },
     { icon: FileText, label: 'Reports', path: '/reports' }
   ] as const;
@@ -239,16 +206,7 @@ const UserManagement = () => {
     });
   }, [users, searchTerm, selectedRole]);
   
-  const getTimeAgo = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-    
-    if (diffInSeconds < 60) return 'just now';
-    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
-    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
-    return `${Math.floor(diffInSeconds / 86400)}d ago`;
-  };
+  
   
   const toggleUserSelection = (userId: string) => {
     setSelectedUser(selectedUser === userId ? null : userId);
@@ -262,7 +220,7 @@ const UserManagement = () => {
     });
   };
   
-  if (isLoading) {
+  if (isLoading && !layout?.isInLayout) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-wine-600"></div>
@@ -270,6 +228,241 @@ const UserManagement = () => {
     );
   }
   
+  if (layout?.isInLayout) {
+    return (
+      <div className="container mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6">
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">User Management</h1>
+          <p className="mt-1 sm:mt-2 text-xs sm:text-sm text-gray-600 dark:text-gray-400">Manage team members and their permissions</p>
+        </div>
+
+        {error && (
+          <div className="mb-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/50 text-red-700 dark:text-red-300 p-4 rounded-lg">
+            {error}
+          </div>
+        )}
+
+        <div className="space-y-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="flex space-x-3">
+              <button 
+                onClick={() => setShowFilters(!showFilters)}
+                className="inline-flex items-center px-3.5 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-wine-500 focus:ring-offset-2"
+              >
+                <Filter className="w-4 h-4 mr-2" />
+                Filters
+                {showFilters ? (
+                  <ChevronUp className="ml-1.5 w-4 h-4" />
+                ) : (
+                  <ChevronDown className="ml-1.5 w-4 h-4" />
+                )}
+              </button>
+            </div>
+          </div>
+
+          <AnimatePresence>
+            {showFilters && (
+              <motion.div 
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.2 }}
+                className="overflow-hidden"
+              >
+                <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 mb-6">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Search
+                      </label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <Search className="h-4 w-4 text-gray-400" />
+                        </div>
+                        <input
+                          type="text"
+                          className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg leading-5 bg-white dark:bg-gray-800 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-wine-500 focus:border-wine-500 sm:text-sm"
+                          placeholder="Search users..."
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Status
+                      </label>
+                      <select
+                        className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-wine-500 focus:border-wine-500 sm:text-sm rounded-lg bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300"
+                        value={selectedRole}
+                        onChange={(e) => setSelectedRole(e.target.value as 'active' | 'inactive' | 'all')}
+                      >
+                        <option value="all">All Status</option>
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                      </select>
+                    </div>
+                    <div className="flex items-end">
+                      <button
+                        onClick={() => {
+                          setSearchTerm('');
+                          setSelectedRole('all');
+                        }}
+                        className="w-full inline-flex justify-center items-center px-4 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-wine-500"
+                      >
+                        <X className="-ml-1 mr-2 h-4 w-4" />
+                        Reset Filters
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start" ref={parent}>
+            {filteredUsers.length > 0 ? (
+              filteredUsers.map((user) => (
+                <motion.div
+                  key={user._id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  transition={{ duration: 0.2 }}
+                  className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden transition-all duration-200 ${
+                    selectedUser === user._id ? 'ring-2 ring-wine-500' : 'hover:shadow-md'
+                  }`}
+                >
+                  <div 
+                    className={`p-5 cursor-pointer ${selectedUser === user._id ? 'bg-gray-50 dark:bg-gray-700/50' : ''}`}
+                    onClick={() => toggleUserSelection(user._id)}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center space-x-4">
+                        <div className={`relative`}>
+                          <div className={`h-12 w-12 rounded-full flex items-center justify-center text-white bg-gradient-to-br from-wine-500 to-wine-600`}>
+                            <User className="w-6 h-6" />
+                          </div>
+                          <span 
+                            className={`absolute -bottom-1 -right-1 h-3.5 w-3.5 rounded-full border-2 border-white dark:border-gray-800 ${
+                              user.accountStatus === 'active' ? 'bg-green-500' : 'bg-gray-400'
+                            }`}
+                            title={user.accountStatus === 'active' ? 'Active' : 'Inactive'}
+                          />
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                            {user.displayName}
+                          </h3>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
+                            {user.email}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <span 
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            user.accountStatus === 'active'
+                              ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' 
+                              : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                          }`}
+                        >
+                          {user.accountStatus === 'active' ? 'Active' : 'Inactive'}
+                        </span>
+                        <button className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300">
+                          <MoreVertical className="h-5 w-5" />
+                        </button>
+                      </div>
+                    </div>
+                    <div className="mt-4 flex items-center text-sm text-gray-500 dark:text-gray-400">
+                      <Calendar className="h-4 w-4 mr-1.5" />
+                      <span>Joined {formatDate(user.createdAt)}</span>
+                    </div>
+                  </div>
+                  <AnimatePresence>
+                    {selectedUser === user._id && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="overflow-hidden border-t border-gray-200 dark:border-gray-700"
+                      >
+                        <div className="p-4 space-y-3">
+                          <button 
+                            onClick={() => openMessageDialog(user)}
+                            className="w-full flex items-center px-3 py-2 text-sm text-left text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-lg transition-colors"
+                          >
+                            <Mail className="h-4 w-4 mr-2 text-gray-500" />
+                            Send Message
+                          </button>
+                          <button 
+                            onClick={() => handleToggleBan(user._id)}
+                            className="w-full flex items-center px-3 py-2 text-sm text-left text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                          >
+                            <LogOut className="h-4 w-4 mr-2" />
+                            {user.accountStatus === 'active' ? 'Ban User' : 'Unban User'}
+                          </button>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </motion.div>
+              ))
+            ) : (
+              <div className="col-span-full py-12 text-center">
+                <div className="mx-auto w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center mb-4">
+                  <User className="h-8 w-8 text-gray-400" />
+                </div>
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-1">No users found</h3>
+                <p className="text-gray-500 dark:text-gray-400">
+                  {searchTerm || selectedRole !== 'all' 
+                    ? 'Try adjusting your search or filter criteria'
+                    : 'No users in the system yet'}
+                </p>
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center justify-between mt-8">
+            <div className="text-sm text-gray-500 dark:text-gray-400">
+              Showing <span className="font-medium">{((pagination.page - 1) * pagination.limit) + 1}</span> to{' '}
+              <span className="font-medium">{Math.min(pagination.page * pagination.limit, pagination.total)}</span> of{' '}
+              <span className="font-medium">{pagination.total}</span> users
+            </div>
+            <div className="flex space-x-2">
+              <button 
+                onClick={handlePreviousPage}
+                disabled={pagination.page <= 1}
+                className="px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Previous
+              </button>
+              <span className="px-3 py-1.5 text-sm text-gray-500 dark:text-gray-400">
+                Page {pagination.page} of {pagination.totalPages}
+              </span>
+              <button 
+                onClick={handleNextPage}
+                disabled={!pagination.hasMore}
+                className="px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+
+          <Snackbar
+            isOpen={snackbar.isOpen}
+            onClose={closeSnackbar}
+            message={snackbar.message}
+            type={snackbar.type}
+            duration={4000}
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={isDarkMode ? 'dark' : ''}>
       <div className="flex h-screen bg-gray-50 dark:bg-gray-900 font-['Inter',sans-serif] overflow-x-hidden">
@@ -298,7 +491,7 @@ const UserManagement = () => {
           </div>
           
           <nav className="mt-6 px-3 sm:px-4 space-y-1 overflow-y-auto h-[calc(100vh-4rem)] pb-20">
-            {navItems.map((item, index) => (
+            {navItems.map((item) => (
               <Link
                 key={item.path}
                 to={item.path}

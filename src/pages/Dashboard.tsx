@@ -24,6 +24,7 @@ import {
   Filter,
   CreditCard
 } from 'lucide-react';
+import { useDashboardLayout } from '../components/DashboardLayoutContext';
 
 interface DashboardStats {
   totalUsers: number;
@@ -34,6 +35,7 @@ interface DashboardStats {
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const layout = useDashboardLayout();
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -92,7 +94,6 @@ const Dashboard = () => {
     { icon: CreditCard, label: 'Subscriptions', path: '/subscriptions' },
     { icon: Users, label: 'User Management', path: '/users' },
     { icon: Shield, label: 'Admin Management', path: '/admins' },
-    { icon: BarChart3, label: 'Analytics', path: '/analytics' },
     { icon: Shield, label: 'Security', path: '/security' },
     { icon: FileText, label: 'Reports', path: '/reports' }
   ] as const;
@@ -100,6 +101,215 @@ const Dashboard = () => {
   // Get the current path to determine active nav item
   const location = useLocation();
   const currentPath = location.pathname;
+  
+  if (layout?.isInLayout) {
+    return (
+      <div className="container mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6">
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">Dashboard Overview</h1>
+          <p className="mt-1 sm:mt-2 text-xs sm:text-sm text-gray-600 dark:text-gray-400">Monitor your platform's key metrics and recent activity</p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6 mb-6 sm:mb-8">
+          {isLoading ? (
+            Array(4).fill(0).map((_, index) => (
+              <div key={index} className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 animate-pulse">
+                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-4"></div>
+                <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-2"></div>
+                <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-2/3"></div>
+              </div>
+            ))
+          ) : error ? (
+            <div className="col-span-4 bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 rounded-xl p-6">
+              <p className="text-red-600 dark:text-red-400">{error}</p>
+            </div>
+          ) : stats ? (
+            <>
+              <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Users</p>
+                    <p className="text-2xl font-semibold text-gray-900 dark:text-white">
+                      {stats.totalUsers.toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
+                    <Users className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Today's Searches</p>
+                    <p className="text-2xl font-semibold text-gray-900 dark:text-white">
+                      {stats.todaySearches.toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="p-3 bg-wine-50 dark:bg-wine-900/30 rounded-lg">
+                    <Eye className="w-6 h-6 text-wine-600 dark:text-wine-400" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Posts</p>
+                    <p className="text-2xl font-semibold text-gray-900 dark:text-white">
+                      {stats.totalPosts.toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="p-3 bg-green-50 dark:bg-green-900/30 rounded-lg">
+                    <FileText className="w-6 h-6 text-green-600 dark:text-green-400" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Active Subscriptions</p>
+                    <p className="text-2xl font-semibold text-gray-900 dark:text-white">
+                      {stats.totalActiveSubscriptions.toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="p-3 bg-purple-50 dark:bg-purple-900/30 rounded-lg">
+                    <DollarSign className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+                  </div>
+                </div>
+              </div>
+            </>
+          ) : null}
+        </div>
+
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Recent Lookups</h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Recently performed phone number lookups</p>
+              </div>
+              <div className="mt-4 sm:mt-0 flex space-x-3">
+                <div className="relative">
+                  <select
+                    value={selectedRiskFilter}
+                    onChange={(e) => setSelectedRiskFilter(e.target.value)}
+                    className="appearance-none bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 pr-8 text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-wine-500 focus:border-transparent"
+                  >
+                    <option>All</option>
+                    <option>Low</option>
+                    <option>Medium</option>
+                    <option>High</option>
+                  </select>
+                  <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                </div>
+                <button className="flex items-center px-4 py-2 bg-wine-600 text-white rounded-lg hover:bg-wine-700 transition-colors text-sm font-medium">
+                  <Filter className="w-4 h-4 mr-2" />
+                  Filter
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto -mx-3 sm:mx-0">
+            {isTableLoading ? (
+              <div className="p-4 sm:p-6">
+                {Array(5).fill(0).map((_, index) => (
+                  <div key={index} className="animate-pulse flex space-x-4 mb-4">
+                    <div className="flex-1 space-y-3 py-1">
+                      <div className="h-3 sm:h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
+                      <div className="space-y-2">
+                        <div className="h-3 sm:h-4 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : tableError ? (
+              <div className="p-6 text-red-600 dark:text-red-400">{tableError}</div>
+            ) : recentLookups.length === 0 ? (
+              <div className="p-6 text-sm sm:text-base text-center text-gray-500 dark:text-gray-400">
+                No recent lookups found
+              </div>
+            ) : (
+              <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+                <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white">Recent Lookups</h3>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <colgroup>
+                      <col className="w-[30%]" />
+                      <col className="w-[25%]" />
+                      <col className="w-[20%]" />
+                      <col className="w-[25%]" />
+                    </colgroup>
+                    <thead className="bg-gray-50 dark:bg-gray-700">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap">
+                          Phone Number
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap">
+                          User
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap">
+                          Results
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap">
+                          Lookup Date
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                      {recentLookups.map((lookup) => (
+                        <tr key={lookup._id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white font-mono">
+                            {lookup.query.phone}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                            {lookup.userId?.displayName || 'N/A'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex">
+                              <span className={`px-2.5 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                lookup.resultCount > 0 
+                                  ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                                  : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                              }`}>
+                                {lookup.resultCount} {lookup.resultCount === 1 ? 'result' : 'results'}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                            {new Date(lookup.createdAt).toLocaleDateString(undefined, {
+                              year: 'numeric',
+                              month: 'short',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {recentLookups.length === 0 && !isTableLoading && !tableError && (
+          <div className="text-center py-12">
+            <Search className="mx-auto w-12 h-12 text-gray-400 mb-4" />
+            <p className="text-sm text-gray-500 dark:text-gray-400">No recent lookups found.</p>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className={isDarkMode ? 'dark' : ''}>
@@ -128,21 +338,36 @@ const Dashboard = () => {
             </button>
           </div>
           
-          <nav className="mt-6 px-3 sm:px-4 space-y-1 overflow-y-auto h-[calc(100vh-4rem)] pb-20">
-            {navItems.map((item, index) => (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors duration-200 ${
-                  currentPath === item.path
-                    ? 'bg-wine-50 dark:bg-wine-900/30 text-wine-700 dark:text-wine-300 border-r-2 border-wine-600'
-                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                }`}
+          <nav className="mt-6 px-3 sm:px-4 space-y-1 overflow-y-auto h-[calc(100vh-4rem)] pb-20 flex flex-col">
+            <div className="flex-1">
+              {navItems.map((item) => (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors duration-200 ${
+                    currentPath === item.path
+                      ? 'bg-wine-50 dark:bg-wine-900/30 text-wine-700 dark:text-wine-300 border-r-2 border-wine-600'
+                      : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  <item.icon className="w-5 h-5 mr-3 flex-shrink-0" />
+                  <span className="truncate">{item.label}</span>
+                </Link>
+              ))}
+            </div>
+            <div className="mt-auto mb-6">
+              <button
+                onClick={handleLogout}
+                className="flex items-center w-full px-4 py-3 text-sm font-medium rounded-lg transition-colors duration-200 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/30"
               >
-                <item.icon className="w-5 h-5 mr-3 flex-shrink-0" />
-                <span className="truncate">{item.label}</span>
-              </Link>
-            ))}
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 mr-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                  <polyline points="16 17 21 12 16 7"></polyline>
+                  <line x1="21" y1="12" x2="9" y2="12"></line>
+                </svg>
+                <span>Logout</span>
+              </button>
+            </div>
           </nav>
         </div>
 

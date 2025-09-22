@@ -21,8 +21,10 @@ import {
 } from 'lucide-react';
 import { fetchAllTickets, markTicketAsResolved } from '../services/support';
 import type { SupportTicket } from '../services/support';
+import { useDashboardLayout } from '../components/DashboardLayoutContext';
 
 const Support = () => {
+  const layout = useDashboardLayout();
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -125,6 +127,144 @@ const Support = () => {
       minute: '2-digit'
     });
   };
+
+  if (layout?.isInLayout) {
+    return (
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Support</h1>
+          <p className="text-gray-600 dark:text-gray-400">Manage and respond to customer inquiries and issues</p>
+        </div>
+        <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
+          {isLoading ? (
+            <div className="p-8 text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
+              <p className="mt-4 text-sm text-gray-500 dark:text-gray-400">Loading tickets...</p>
+            </div>
+          ) : tickets.length === 0 ? (
+            <div className="p-8 text-center">
+              <Headphones className="w-12 h-12 mx-auto text-gray-400" />
+              <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">No tickets found</h3>
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                There are no support tickets at the moment
+              </p>
+            </div>
+          ) : (
+            <ul className="divide-y divide-gray-200 dark:divide-gray-700">
+              {tickets.map((ticket) => (
+                <li key={ticket._id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                  <div 
+                    className="flex items-center justify-between px-6 py-4 cursor-pointer"
+                    onClick={() => toggleTicket(ticket._id)}
+                  >
+                    <div className="flex items-center">
+                      {ticket.user?.avatar ? (
+                        <img 
+                          src={ticket.user.avatar} 
+                          alt={ticket.user.displayName} 
+                          className="w-10 h-10 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="flex-shrink-0 w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center text-blue-600 dark:text-blue-300">
+                          <User className="w-5 h-5" />
+                        </div>
+                      )}
+                      <div className="ml-4">
+                        <div className="flex items-center space-x-2">
+                          <p className="text-sm font-medium text-gray-900 dark:text-white">
+                            {ticket.user?.displayName || 'Unknown User'}
+                          </p>
+                        </div>
+                        <p className="text-sm font-medium text-gray-900 dark:text-white mt-1">{ticket.subject}</p>
+                        <div className="flex items-center mt-1 space-x-2">
+                          {getStatusBadge(ticket.status)}
+                          {getPriorityBadge(ticket.priority)}
+                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                            {formatDate(ticket.createdAt)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center">
+                      {expandedTicket === ticket._id ? (
+                        <ChevronUp className="w-5 h-5 text-gray-400" />
+                      ) : (
+                        <ChevronDown className="w-5 h-5 text-gray-400" />
+                      )}
+                    </div>
+                  </div>
+                  <AnimatePresence>
+                    {expandedTicket === ticket._id && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="px-6 pb-4 overflow-hidden"
+                      >
+                        <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                          <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line">
+                            {ticket.description}
+                          </p>
+                          {ticket.attachments && ticket.attachments.length > 0 && (
+                            <div className="mt-4">
+                              <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 flex items-center">
+                                <ImageIcon className="w-4 h-4 mr-1" />
+                                Attachments ({ticket.attachments.length})
+                              </h4>
+                              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 mt-2">
+                                {ticket.attachments.map((attachment, index) => (
+                                  <a 
+                                    key={index} 
+                                    href={attachment} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="block rounded-md overflow-hidden border border-gray-200 dark:border-gray-600 hover:border-blue-500 transition-colors"
+                                  >
+                                    <img 
+                                      src={attachment} 
+                                      alt={`Attachment ${index + 1}`} 
+                                      className="w-full h-24 object-cover"
+                                      onError={(e) => {
+                                        const target = e.target as HTMLImageElement;
+                                        target.onerror = null;
+                                        target.src = 'https://via.placeholder.com/150?text=Preview+Not+Available';
+                                      }}
+                                    />
+                                  </a>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {ticket.status !== 'closed' && ticket.status !== 'resolved' && (
+                            <div className="flex justify-end mt-4">
+                              <button 
+                                className={`px-3 py-1 text-sm text-white rounded-md transition-colors ${
+                                  resolvingTicket === ticket._id 
+                                    ? 'bg-green-400 cursor-not-allowed' 
+                                    : 'bg-green-600 hover:bg-green-700'
+                                }`}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleResolveTicket(ticket._id);
+                                }}
+                                disabled={!!resolvingTicket}
+                              >
+                                {resolvingTicket === ticket._id ? 'Processing...' : 'Mark as Resolved'}
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={isDarkMode ? 'dark' : ''}>
