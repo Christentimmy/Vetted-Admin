@@ -33,3 +33,23 @@ export const fetchAllTickets = async (): Promise<SupportTicket[]> => {
     throw error;
   }
 };
+
+export const markTicketAsResolved = async (ticketId: string): Promise<{ success: boolean }> => {
+  try {
+    const token = localStorage.getItem('vetted_admin_token');
+    const response = await axios.post(
+      `${API_BASE_URL}/admin/mark-ticket`,
+      { id: ticketId },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      }
+    );
+    return { success: true };
+  } catch (error) {
+    console.error('Error marking ticket as resolved:', error);
+    throw error;
+  }
+};

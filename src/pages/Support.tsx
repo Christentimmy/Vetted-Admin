@@ -19,7 +19,7 @@ import {
   Phone,
   Image as ImageIcon
 } from 'lucide-react';
-import { fetchAllTickets } from '../services/support';
+import { fetchAllTickets, markTicketAsResolved } from '../services/support';
 import type { SupportTicket } from '../services/support';
 
 const Support = () => {
@@ -28,6 +28,7 @@ const Support = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
   const [expandedTicket, setExpandedTicket] = useState<string | null>(null);
+  const [resolvingTicket, setResolvingTicket] = useState<string | null>(null);
   const location = useLocation();
 
   useEffect(() => {
@@ -55,6 +56,26 @@ const Support = () => {
 
   const toggleTicket = (id: string) => {
     setExpandedTicket(expandedTicket === id ? null : id);
+  };
+
+  const handleResolveTicket = async (ticketId: string) => {
+    if (resolvingTicket) return; // Prevent multiple clicks
+    
+    setResolvingTicket(ticketId);
+    try {
+      await markTicketAsResolved(ticketId);
+      // Update the local state to reflect the change
+      setTickets(tickets.map(ticket => 
+        ticket._id === ticketId 
+          ? { ...ticket, status: 'resolved' } 
+          : ticket
+      ));
+    } catch (error) {
+      console.error('Failed to resolve ticket:', error);
+      // You might want to show an error toast here
+    } finally {
+      setResolvingTicket(null);
+    }
   };
 
   // Navigation items for the sidebar
@@ -315,28 +336,24 @@ const Support = () => {
                                       </div>
                                     )}
                                     
-                                    <div className="flex justify-end mt-4 space-x-2">
-                                      <button 
-                                        className="px-3 py-1 text-sm text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          // Handle respond action
-                                        }}
-                                      >
-                                        Respond
-                                      </button>
-                                      {ticket.status !== 'closed' && ticket.status !== 'resolved' && (
+                                    {ticket.status !== 'closed' && ticket.status !== 'resolved' && (
+                                      <div className="flex justify-end mt-4">
                                         <button 
-                                          className="px-3 py-1 text-sm text-white bg-green-600 rounded-md hover:bg-green-700 transition-colors"
+                                          className={`px-3 py-1 text-sm text-white rounded-md transition-colors ${
+                                            resolvingTicket === ticket._id 
+                                              ? 'bg-green-400 cursor-not-allowed' 
+                                              : 'bg-green-600 hover:bg-green-700'
+                                          }`}
                                           onClick={(e) => {
                                             e.stopPropagation();
-                                            // Handle mark as resolved action
+                                            handleResolveTicket(ticket._id);
                                           }}
+                                          disabled={!!resolvingTicket}
                                         >
-                                          Mark as Resolved
+                                          {resolvingTicket === ticket._id ? 'Processing...' : 'Mark as Resolved'}
                                         </button>
-                                      )}
-                                    </div>
+                                      </div>
+                                    )}
                                   </div>
                                 </motion.div>
                               )}
