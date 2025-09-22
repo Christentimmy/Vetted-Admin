@@ -8,8 +8,6 @@ import {
   Check, 
   X, 
   MoreVertical, 
-  Shield, 
-  ShieldCheck, 
   Phone,
   Settings,
   Bell,
@@ -31,15 +29,7 @@ import { adminManagementService, Admin, PaginationInfo } from '../services/admin
 import Snackbar from '../components/Snackbar';
 import { useDashboardLayout } from '../components/DashboardLayoutContext';
 
-const roleIcons = {
-  superadmin: <Shield className="w-4 h-4" />,
-  admin: <ShieldCheck className="w-4 h-4" />
-};
-
-const roleColors = {
-  superadmin: 'from-purple-500 to-indigo-600',
-  admin: 'from-blue-500 to-cyan-600'
-};
+ 
 
 const AdminManagement = () => {
   const navigate = useNavigate();
@@ -367,16 +357,19 @@ const AdminManagement = () => {
                       <thead className="bg-gray-50 dark:bg-gray-800">
                         <tr>
                           <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            <div className="flex items-center">
-                              <div className="flex-shrink-0 h-10 w-10"></div>
-                              <span className="ml-4">Admin</span>
-                            </div>
+                            Admin
                           </th>
                           <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            <div className="flex items-center">
-                              <div className="flex-shrink-0 h-6 w-6"></div>
-                              <span className="ml-2">Role</span>
-                            </div>
+                            Role
+                          </th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            Status
+                          </th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            Created
+                          </th>
+                          <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            Actions
                           </th>
                         </tr>
                       </thead>
@@ -399,15 +392,8 @@ const AdminManagement = () => {
                                   </div>
                                 </div>
                               </td>
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                <div className="flex items-center">
-                                  <div className={`flex-shrink-0 h-6 w-6 rounded-full bg-gradient-to-r ${roleColors[admin.role]} flex items-center justify-center text-white`}>
-                                    {roleIcons[admin.role]}
-                                  </div>
-                                  <span className="ml-2 text-sm text-gray-900 dark:text-white capitalize">
-                                    {admin.role}
-                                  </span>
-                                </div>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white capitalize">
+                                {admin.role}
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <div 
@@ -855,16 +841,19 @@ const AdminManagement = () => {
                         <thead className="bg-gray-50 dark:bg-gray-800">
                           <tr>
                             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                              <div className="flex items-center">
-                                <div className="flex-shrink-0 h-10 w-10"></div>
-                                <span className="ml-4">Admin</span>
-                              </div>
+                              Admin
                             </th>
                             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                              <div className="flex items-center">
-                                <div className="flex-shrink-0 h-6 w-6"></div>
-                                <span className="ml-2">Role</span>
-                              </div>
+                              Role
+                            </th>
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                              Status
+                            </th>
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                              Created
+                            </th>
+                            <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                              Actions
                             </th>
                           </tr>
                         </thead>
@@ -887,15 +876,8 @@ const AdminManagement = () => {
                                     </div>
                                   </div>
                                 </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                  <div className="flex items-center">
-                                    <div className={`flex-shrink-0 h-6 w-6 rounded-full bg-gradient-to-r ${roleColors[admin.role]} flex items-center justify-center text-white`}>
-                                      {roleIcons[admin.role]}
-                                    </div>
-                                    <span className="ml-2 text-sm text-gray-900 dark:text-white capitalize">
-                                      {admin.role}
-                                    </span>
-                                  </div>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white capitalize">
+                                  {admin.role}
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap">
                                   <div 
