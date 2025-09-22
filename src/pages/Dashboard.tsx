@@ -251,10 +251,10 @@ const Dashboard = () => {
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap">
                           Phone Number
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap">
+                        <th className="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap">
                           User
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap">
+                        <th className="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap">
                           Results
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap">
@@ -268,10 +268,10 @@ const Dashboard = () => {
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white font-mono">
                             {lookup.query.phone}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                          <td className="hidden sm:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                             {lookup.userId?.displayName || 'N/A'}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          <td className="hidden sm:table-cell px-6 py-4 whitespace-nowrap">
                             <div className="flex">
                               <span className={`px-2.5 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full ${
                                 lookup.resultCount > 0 
@@ -324,10 +324,19 @@ const Dashboard = () => {
         >
           <div className="flex items-center justify-between h-16 px-4 sm:px-6 border-b border-gray-200 dark:border-gray-700">
             <div className="flex items-center">
-              <div className="w-8 h-8 bg-wine-600 rounded-lg flex items-center justify-center flex-shrink-0">
-                <Phone className="w-5 h-5 text-white" />
+              <div className="w-8 h-8 bg-wine-600 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden">
+                <img
+                  src="/logo.png"
+                  alt="Vetted"
+                  className="w-5 h-5 object-contain"
+                  style={{ filter: 'brightness(0) invert(1)' }}
+                  onError={(e) => {
+                    const target = e.currentTarget as HTMLImageElement;
+                    target.style.display = 'none';
+                  }}
+                />
               </div>
-              <span className="ml-3 text-xl font-semibold text-gray-900 dark:text-white truncate">Tea Admin</span>
+              <span className="ml-3 text-xl font-semibold text-gray-900 dark:text-white truncate">Vetted</span>
             </div>
             <button
               onClick={toggleSidebar}
@@ -466,10 +475,10 @@ const Dashboard = () => {
                 {isLoading ? (
                   // Loading state
                   Array(4).fill(0).map((_, index) => (
-                    <div key={index} className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 animate-pulse">
-                      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-4"></div>
-                      <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-2"></div>
-                      <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-2/3"></div>
+                    <div key={index} className="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-700 animate-pulse">
+                      <div className="h-3 sm:h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-3 sm:mb-4"></div>
+                      <div className="h-6 sm:h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-2"></div>
+                      <div className="h-2.5 sm:h-3 bg-gray-200 dark:bg-gray-700 rounded w-2/3"></div>
                     </div>
                   ))
                 ) : error ? (
@@ -480,7 +489,7 @@ const Dashboard = () => {
                 ) : stats ? (
                   // Success state
                   <>
-                    <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+                    <div className="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-700">
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Users</p>
@@ -488,13 +497,13 @@ const Dashboard = () => {
                             {stats.totalUsers.toLocaleString()}
                           </p>
                         </div>
-                        <div className="p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
+                        <div className="p-2 sm:p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
                           <Users className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                         </div>
                       </div>
                     </div>
 
-                    <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+                    <div className="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-700">
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Today's Searches</p>
@@ -502,13 +511,13 @@ const Dashboard = () => {
                             {stats.todaySearches.toLocaleString()}
                           </p>
                         </div>
-                        <div className="p-3 bg-wine-50 dark:bg-wine-900/30 rounded-lg">
+                        <div className="p-2 sm:p-3 bg-wine-50 dark:bg-wine-900/30 rounded-lg">
                           <Eye className="w-6 h-6 text-wine-600 dark:text-wine-400" />
                         </div>
                       </div>
                     </div>
 
-                    <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+                    <div className="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-700">
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Posts</p>
@@ -516,13 +525,13 @@ const Dashboard = () => {
                             {stats.totalPosts.toLocaleString()}
                           </p>
                         </div>
-                        <div className="p-3 bg-green-50 dark:bg-green-900/30 rounded-lg">
+                        <div className="p-2 sm:p-3 bg-green-50 dark:bg-green-900/30 rounded-lg">
                           <FileText className="w-6 h-6 text-green-600 dark:text-green-400" />
                         </div>
                       </div>
                     </div>
 
-                    <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+                    <div className="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-700">
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Active Subscriptions</p>
@@ -530,7 +539,7 @@ const Dashboard = () => {
                             {stats.totalActiveSubscriptions.toLocaleString()}
                           </p>
                         </div>
-                        <div className="p-3 bg-purple-50 dark:bg-purple-900/30 rounded-lg">
+                        <div className="p-2 sm:p-3 bg-purple-50 dark:bg-purple-900/30 rounded-lg">
                           <DollarSign className="w-6 h-6 text-purple-600 dark:text-purple-400" />
                         </div>
                       </div>

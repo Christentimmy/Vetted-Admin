@@ -2,8 +2,6 @@ import { useMemo, useState } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   Search,
-  Bell,
-  User,
   Moon,
   Sun,
   Menu,
@@ -67,10 +65,19 @@ const DashboardLayout = () => {
           >
             <div className="flex items-center justify-between h-16 px-4 sm:px-6 border-b border-gray-200 dark:border-gray-700">
               <div className="flex items-center">
-                <div className="w-8 h-8 bg-wine-600 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <Phone className="w-5 h-5 text-white" />
+                <div className="w-8 h-8 bg-wine-600 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden">
+                  <img
+                    src="/logo.png"
+                    alt="Vetted"
+                    className="w-5 h-5 object-contain"
+                    style={{ filter: 'brightness(0) invert(1)' }}
+                    onError={(e) => {
+                      const target = e.currentTarget as HTMLImageElement;
+                      target.style.display = 'none';
+                    }}
+                  />
                 </div>
-                <span className="ml-3 text-xl font-semibold text-gray-900 dark:text-white truncate">Tea Admin</span>
+                <span className="ml-3 text-xl font-semibold text-gray-900 dark:text-white truncate">Vetted</span>
               </div>
               <button
                 onClick={toggleSidebar}
@@ -85,6 +92,12 @@ const DashboardLayout = () => {
                 <Link
                   key={item.path}
                   to={item.path}
+                  onClick={() => {
+                    // Close sidebar on navigation for mobile/tablet (< lg)
+                    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+                      setIsSidebarOpen(false);
+                    }
+                  }}
                   className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors duration-200 ${
                     location.pathname === item.path
                       ? 'bg-wine-50 dark:bg-wine-900/30 text-wine-700 dark:text-wine-300 border-r-2 border-wine-600'
@@ -154,18 +167,6 @@ const DashboardLayout = () => {
                     <Moon className="w-5 h-5" />
                   )}
                 </button>
-                <button 
-                  className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 relative"
-                  aria-label="Notifications"
-                >
-                  <Bell className="w-5 h-5" />
-                  <span className="absolute top-1.5 right-1.5 block h-2 w-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-gray-800"></span>
-                </button>
-                <div className="relative">
-                  <button className="p-1.5 rounded-full bg-wine-600 text-white">
-                    <User className="w-4 h-4" />
-                  </button>
-                </div>
               </div>
             </header>
             <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 dark:bg-gray-900">

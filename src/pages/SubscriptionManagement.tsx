@@ -449,10 +449,10 @@ const SubscriptionManagement = () => {
                 ))}
               </select>
 
-              <div className="flex border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden">
+                <div className="flex border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden">
                 <button
                   onClick={() => setViewMode('table')}
-                  className={`px-3 py-2 text-sm font-medium ${
+                    className={`px-3 py-2 text-xs sm:text-sm font-medium ${
                     viewMode === 'table'
                       ? 'bg-wine-600 text-white'
                       : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'
@@ -462,7 +462,7 @@ const SubscriptionManagement = () => {
                 </button>
                 <button
                   onClick={() => setViewMode('cards')}
-                  className={`px-3 py-2 text-sm font-medium ${
+                    className={`px-3 py-2 text-xs sm:text-sm font-medium ${
                     viewMode === 'cards'
                       ? 'bg-wine-600 text-white'
                       : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'
@@ -481,7 +481,7 @@ const SubscriptionManagement = () => {
               <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                 <thead className="bg-gray-50 dark:bg-gray-700">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                       <button
                         onClick={() => handleSort('userName')}
                         className="flex items-center space-x-1 hover:text-gray-700 dark:hover:text-gray-200"
@@ -492,7 +492,7 @@ const SubscriptionManagement = () => {
                         )}
                       </button>
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    <th className="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                       <button
                         onClick={() => handleSort('planType')}
                         className="flex items-center space-x-1 hover:text-gray-700 dark:hover:text-gray-200"
@@ -503,7 +503,7 @@ const SubscriptionManagement = () => {
                         )}
                       </button>
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    <th className="hidden md:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                       <button
                         onClick={() => handleSort('status')}
                         className="flex items-center space-x-1 hover:text-gray-700 dark:hover:text-gray-200"
@@ -514,7 +514,7 @@ const SubscriptionManagement = () => {
                         )}
                       </button>
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    <th className="hidden md:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                       <button
                         onClick={() => handleSort('price')}
                         className="flex items-center space-x-1 hover:text-gray-700 dark:hover:text-gray-200"
@@ -525,7 +525,7 @@ const SubscriptionManagement = () => {
                         )}
                       </button>
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                       <button
                         onClick={() => handleSort('endDate')}
                         className="flex items-center space-x-1 hover:text-gray-700 dark:hover:text-gray-200"
@@ -536,7 +536,7 @@ const SubscriptionManagement = () => {
                         )}
                       </button>
                     </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    <th className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                       Actions
                     </th>
                   </tr>
@@ -551,7 +551,7 @@ const SubscriptionManagement = () => {
                         className="hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer"
                         onClick={() => handleViewInvoiceHistory(subscription.userId, subscription.displayName)}
                       >
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
                             <div className={`h-10 w-10 rounded-full flex items-center justify-center text-white bg-gradient-to-br ${getPlanColor(subscription.planName)}`}>
                               {getPlanIcon(subscription.planName)}
@@ -566,14 +566,14 @@ const SubscriptionManagement = () => {
                             </div>
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="hidden sm:table-cell px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
                             <span className="text-sm font-medium text-gray-900 dark:text-white">
                               {subscription.planName}
                             </span>
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="hidden md:table-cell px-6 py-4 whitespace-nowrap">
                           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColors[subscription.status]}`}>
                             {subscription.status === 'active' && <CheckCircle2 className="w-3 h-3 mr-1" />}
                             {subscription.status === 'cancelled' && <X className="w-3 h-3 mr-1" />}
@@ -583,13 +583,13 @@ const SubscriptionManagement = () => {
                             {subscription.status}
                           </span>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                        <td className="hidden md:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                           {subscription.phoneNumber}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                           {formatDate(subscription.currentPeriodEnd)}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                           {subscription.status === 'active' && (
                             <button 
                               onClick={(e) => {
@@ -773,10 +773,19 @@ const SubscriptionManagement = () => {
         >
           <div className="flex items-center justify-between h-16 px-4 sm:px-6 border-b border-gray-200 dark:border-gray-700">
             <div className="flex items-center">
-              <div className="w-8 h-8 bg-wine-600 rounded-lg flex items-center justify-center flex-shrink-0">
-                <CreditCard className="w-5 h-5 text-white" />
+              <div className="w-8 h-8 bg-wine-600 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden">
+                <img
+                  src="/logo.png"
+                  alt="Vetted"
+                  className="w-5 h-5 object-contain"
+                  style={{ filter: 'brightness(0) invert(1)' }}
+                  onError={(e) => {
+                    const target = e.currentTarget as HTMLImageElement;
+                    target.style.display = 'none';
+                  }}
+                />
               </div>
-              <span className="ml-3 text-xl font-semibold text-gray-900 dark:text-white truncate">Tea Admin</span>
+              <span className="ml-3 text-xl font-semibold text-gray-900 dark:text-white truncate">Vetted</span>
             </div>
             <button
               onClick={toggleSidebar}

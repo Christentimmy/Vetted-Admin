@@ -376,7 +376,7 @@ const AdminManagement = () => {
                       <tbody ref={parent} className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                         {filteredAdmins.map((admin) => (
                           <React.Fragment key={admin._id}>
-                            <tr className="hover:bg-gray-50 dark:hover:bg-gray-750">
+                            <tr className="hover:bg-gray-50 dark:hover:bg-gray-700/60">
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <div className="flex items-center">
                                   <div className="flex-shrink-0 h-10 w-10 rounded-full bg-gradient-to-r from-gray-500 to-gray-600 flex items-center justify-center text-white font-medium">
@@ -413,7 +413,7 @@ const AdminManagement = () => {
                               <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                 <button
                                   onClick={() => setSelectedAdmin(selectedAdmin === admin._id ? null : admin._id)}
-                                  className="text-wine-600 hover:text-wine-900 dark:text-wine-400 dark:hover:text-wine-300"
+                                  className="text-wine-600 hover:text-wine-900 dark:text-wine-400 dark:hover:text-wine-200"
                                 >
                                   <MoreVertical className="w-5 h-5" />
                                 </button>
@@ -427,7 +427,7 @@ const AdminManagement = () => {
                                   exit={{ opacity: 0, height: 0 }}
                                   transition={{ duration: 0.2 }}
                                 >
-                                  <td colSpan={5} className="px-6 py-4 bg-gray-50 dark:bg-gray-750">
+                                  <td colSpan={5} className="px-6 py-4 bg-gray-50 dark:bg-gray-700/60">
                                     <div className="flex flex-wrap gap-2">
                                       <button
                                         onClick={() => handleToggleStatus(admin._id)}

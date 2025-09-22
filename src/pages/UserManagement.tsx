@@ -231,8 +231,8 @@ const UserManagement = () => {
   if (layout?.isInLayout) {
     return (
       <div className="container mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6">
-        <div className="mb-6 sm:mb-8">
-          <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">User Management</h1>
+        <div className="mb-4 sm:mb-6">
+          <h1 className="text-lg sm:text-2xl font-semibold text-gray-900 dark:text-white">User Management</h1>
           <p className="mt-1 sm:mt-2 text-xs sm:text-sm text-gray-600 dark:text-gray-400">Manage team members and their permissions</p>
         </div>
 
@@ -243,11 +243,11 @@ const UserManagement = () => {
         )}
 
         <div className="space-y-6">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
             <div className="flex space-x-3">
               <button 
                 onClick={() => setShowFilters(!showFilters)}
-                className="inline-flex items-center px-3.5 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-wine-500 focus:ring-offset-2"
+                className="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 text-xs sm:text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-wine-500 focus:ring-offset-2"
               >
                 <Filter className="w-4 h-4 mr-2" />
                 Filters
@@ -269,7 +269,7 @@ const UserManagement = () => {
                 transition={{ duration: 0.2 }}
                 className="overflow-hidden"
               >
-                <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 mb-6">
+                <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3 sm:p-4 mb-6">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -281,7 +281,7 @@ const UserManagement = () => {
                         </div>
                         <input
                           type="text"
-                          className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg leading-5 bg-white dark:bg-gray-800 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-wine-500 focus:border-wine-500 sm:text-sm"
+                          className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg leading-5 bg-white dark:bg-gray-800 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-wine-500 focus:border-wine-500 text-sm"
                           placeholder="Search users..."
                           value={searchTerm}
                           onChange={(e) => setSearchTerm(e.target.value)}
@@ -293,7 +293,7 @@ const UserManagement = () => {
                         Status
                       </label>
                       <select
-                        className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-wine-500 focus:border-wine-500 sm:text-sm rounded-lg bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300"
+                        className="mt-1 block w-full pl-3 pr-10 py-2 border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-wine-500 focus:border-wine-500 text-sm rounded-lg bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300"
                         value={selectedRole}
                         onChange={(e) => setSelectedRole(e.target.value as 'active' | 'inactive' | 'all')}
                       >
@@ -308,7 +308,7 @@ const UserManagement = () => {
                           setSearchTerm('');
                           setSelectedRole('all');
                         }}
-                        className="w-full inline-flex justify-center items-center px-4 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-wine-500"
+                        className="w-full inline-flex justify-center items-center px-4 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-xs sm:text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-wine-500"
                       >
                         <X className="-ml-1 mr-2 h-4 w-4" />
                         Reset Filters
@@ -320,7 +320,7 @@ const UserManagement = () => {
             )}
           </AnimatePresence>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start" ref={parent}>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 items-start" ref={parent}>
             {filteredUsers.length > 0 ? (
               filteredUsers.map((user) => (
                 <motion.div
@@ -334,7 +334,7 @@ const UserManagement = () => {
                   }`}
                 >
                   <div 
-                    className={`p-5 cursor-pointer ${selectedUser === user._id ? 'bg-gray-50 dark:bg-gray-700/50' : ''}`}
+                    className={`p-4 sm:p-5 cursor-pointer ${selectedUser === user._id ? 'bg-gray-50 dark:bg-gray-700/50' : ''}`}
                     onClick={() => toggleUserSelection(user._id)}
                   >
                     <div className="flex items-start justify-between">
@@ -351,10 +351,10 @@ const UserManagement = () => {
                           />
                         </div>
                         <div>
-                          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                          <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
                             {user.displayName}
                           </h3>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">
+                          <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 break-all">
                             {user.email}
                           </p>
                         </div>
@@ -388,17 +388,17 @@ const UserManagement = () => {
                         transition={{ duration: 0.2 }}
                         className="overflow-hidden border-t border-gray-200 dark:border-gray-700"
                       >
-                        <div className="p-4 space-y-3">
+                        <div className="p-3 sm:p-4 space-y-3">
                           <button 
                             onClick={() => openMessageDialog(user)}
-                            className="w-full flex items-center px-3 py-2 text-sm text-left text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-lg transition-colors"
+                            className="w-full flex items-center px-3 py-2 text-xs sm:text-sm text-left text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-lg transition-colors"
                           >
                             <Mail className="h-4 w-4 mr-2 text-gray-500" />
                             Send Message
                           </button>
                           <button 
                             onClick={() => handleToggleBan(user._id)}
-                            className="w-full flex items-center px-3 py-2 text-sm text-left text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                            className="w-full flex items-center px-3 py-2 text-xs sm:text-sm text-left text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                           >
                             <LogOut className="h-4 w-4 mr-2" />
                             {user.accountStatus === 'active' ? 'Ban User' : 'Unban User'}
@@ -425,7 +425,7 @@ const UserManagement = () => {
           </div>
 
           <div className="flex items-center justify-between mt-8">
-            <div className="text-sm text-gray-500 dark:text-gray-400">
+            <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
               Showing <span className="font-medium">{((pagination.page - 1) * pagination.limit) + 1}</span> to{' '}
               <span className="font-medium">{Math.min(pagination.page * pagination.limit, pagination.total)}</span> of{' '}
               <span className="font-medium">{pagination.total}</span> users
@@ -434,17 +434,17 @@ const UserManagement = () => {
               <button 
                 onClick={handlePreviousPage}
                 disabled={pagination.page <= 1}
-                className="px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-2 sm:px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Previous
               </button>
-              <span className="px-3 py-1.5 text-sm text-gray-500 dark:text-gray-400">
+              <span className="px-2 sm:px-3 py-1.5 text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                 Page {pagination.page} of {pagination.totalPages}
               </span>
               <button 
                 onClick={handleNextPage}
                 disabled={!pagination.hasMore}
-                className="px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-2 sm:px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Next
               </button>
@@ -476,10 +476,19 @@ const UserManagement = () => {
         >
           <div className="flex items-center justify-between h-16 px-4 sm:px-6 border-b border-gray-200 dark:border-gray-700">
             <div className="flex items-center">
-              <div className="w-8 h-8 bg-wine-600 rounded-lg flex items-center justify-center flex-shrink-0">
-                <Phone className="w-5 h-5 text-white" />
+              <div className="w-8 h-8 bg-wine-600 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden">
+                <img
+                  src="/logo.png"
+                  alt="Vetted"
+                  className="w-5 h-5 object-contain"
+                  style={{ filter: 'brightness(0) invert(1)' }}
+                  onError={(e) => {
+                    const target = e.currentTarget as HTMLImageElement;
+                    target.style.display = 'none';
+                  }}
+                />
               </div>
-              <span className="ml-3 text-xl font-semibold text-gray-900 dark:text-white truncate">Tea Admin</span>
+              <span className="ml-3 text-xl font-semibold text-gray-900 dark:text-white truncate">Vetted</span>
             </div>
             <button
               onClick={toggleSidebar}

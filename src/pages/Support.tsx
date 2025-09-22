@@ -278,10 +278,19 @@ const Support = () => {
         >
           <div className="flex items-center justify-between h-16 px-4 sm:px-6 border-b border-gray-200 dark:border-gray-700">
             <div className="flex items-center">
-              <div className="w-8 h-8 bg-wine-600 rounded-lg flex items-center justify-center flex-shrink-0">
-                <Phone className="w-5 h-5 text-white" />
+              <div className="w-8 h-8 bg-wine-600 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden">
+                <img
+                  src="/logo.png"
+                  alt="Vetted"
+                  className="w-5 h-5 object-contain"
+                  style={{ filter: 'brightness(0) invert(1)' }}
+                  onError={(e) => {
+                    const target = e.currentTarget as HTMLImageElement;
+                    target.style.display = 'none';
+                  }}
+                />
               </div>
-              <span className="ml-3 text-xl font-semibold text-gray-900 dark:text-white truncate">Tea Admin</span>
+              <span className="ml-3 text-xl font-semibold text-gray-900 dark:text-white truncate">Vetted</span>
             </div>
             <button
               onClick={toggleSidebar}
