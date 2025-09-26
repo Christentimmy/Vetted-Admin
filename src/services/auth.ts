@@ -1,5 +1,5 @@
-import { API_BASE_URL } from '../config';
-import { getToken, setToken, clearToken } from '../utils/token';
+import { API_BASE_URL } from "../config";
+import { getToken, setToken, clearToken } from "../utils/token";
 
 interface LoginCredentials {
   email: string;
@@ -13,16 +13,18 @@ export const authService = {
   async login(credentials: LoginCredentials) {
     try {
       const response = await fetch(`${API_BASE_URL}/admin/login`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(credentials),
       });
 
       if (!response.ok) {
         const error = await response.json().catch(() => ({}));
-        throw new Error(error.message || 'Login failed. Please check your credentials.');
+        throw new Error(
+          error.message || "Login failed. Please check your credentials."
+        );
       }
 
       const data = await response.json();
@@ -51,15 +53,19 @@ export const authService = {
 
     try {
       const response = await fetch(`${API_BASE_URL}/auth/validate-token`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
       });
+      if (!response.ok) {
+        clearToken();
+        window.location.href = "/login";
+      }
       return response.ok;
     } catch (error) {
-      console.error('Token validation failed:', error);
+      console.error("Token validation failed:", error);
       return false;
     }
   },

@@ -255,7 +255,7 @@ const Dashboard = () => {
                           User
                         </th>
                         <th className="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap">
-                          Results
+                          Images
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap">
                           Lookup Date
@@ -266,7 +266,7 @@ const Dashboard = () => {
                       {recentLookups.map((lookup) => (
                         <tr key={lookup._id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white font-mono">
-                            {lookup.query.phone}
+                            {lookup.query?.phone || 'Image'}
                           </td>
                           <td className="hidden sm:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                             {lookup.userId?.displayName || 'N/A'}
@@ -278,7 +278,7 @@ const Dashboard = () => {
                                   ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
                                   : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
                               }`}>
-                                {lookup.resultCount} {lookup.resultCount === 1 ? 'result' : 'results'}
+                                {lookup.resultCount > 0 ? 'Available' : 'None'}
                               </span>
                             </div>
                           </td>
@@ -340,7 +340,7 @@ const Dashboard = () => {
             </div>
             <button
               onClick={toggleSidebar}
-              className="lg:hidden p-1.5 rounded-md text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              className="lg:hidden p-1.5 rounded-md text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
               aria-label="Close menu"
             >
               <X className="w-6 h-6" />
@@ -397,7 +397,7 @@ const Dashboard = () => {
             <div className="flex-1 flex items-center">
               <button
                 onClick={toggleSidebar}
-                className="p-2 rounded-md text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 lg:hidden"
+                className="lg:hidden p-1.5 rounded-md text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
                 aria-label="Toggle menu"
               >
                 <Menu className="w-5 h-5" />
@@ -620,7 +620,7 @@ const Dashboard = () => {
                                 User
                               </th>
                               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap">
-                                Results
+                                Images
                               </th>
                               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap">
                                 Lookup Date
@@ -631,7 +631,7 @@ const Dashboard = () => {
                             {recentLookups.map((lookup) => (
                               <tr key={lookup._id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white font-mono">
-                                  {lookup.query.phone}
+                                  {lookup.query?.phone || 'Image'}
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                                   {lookup.userId?.displayName || 'N/A'}
@@ -643,7 +643,7 @@ const Dashboard = () => {
                                         ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
                                         : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
                                     }`}>
-                                      {lookup.resultCount} {lookup.resultCount === 1 ? 'result' : 'results'}
+                                      {lookup.resultCount > 0 ? 'Available' : 'None'}
                                     </span>
                                   </div>
                                 </td>
