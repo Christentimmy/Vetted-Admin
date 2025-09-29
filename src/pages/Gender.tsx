@@ -9,6 +9,9 @@ const Gender = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
+  const [dateFrom, setDateFrom] = useState<string>('');
+  const [dateTo, setDateTo] = useState<string>('');
   // Track processing per action using separate sets to avoid dual spinners
   const [processingAccept, setProcessingAccept] = useState<Set<string>>(new Set());
   const [processingReject, setProcessingReject] = useState<Set<string>>(new Set());
@@ -31,28 +34,77 @@ const Gender = () => {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return items;
-    return items.filter(i =>
-      i.user?.displayName?.toLowerCase().includes(q) ||
-      i.user?.email?.toLowerCase().includes(q)
-    );
-  }, [items, search]);
+    let list = items;
+    if (q) {
+      list = list.filter(i =>
+        i.user?.displayName?.toLowerCase().includes(q) ||
+        i.user?.email?.toLowerCase().includes(q)
+      );
+    }
+    if (statusFilter !== 'all') {
+      list = list.filter(i => i.status === statusFilter);
+    }
+    if (dateFrom) {
+      const from = new Date(dateFrom);
+      list = list.filter(i => new Date(i.createdAt) >= from);
+    }
+    if (dateTo) {
+      const to = new Date(dateTo);
+      // Include entire end day by setting time to 23:59:59
+      to.setHours(23, 59, 59, 999);
+      list = list.filter(i => new Date(i.createdAt) <= to);
+    }
+    return list;
+  }, [items, search, statusFilter, dateFrom, dateTo]);
 
   const renderTable = () => (
     <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-      <div className="px-4 sm:px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Gender Verifications</h2>
-        <div className="relative max-w-xs w-full">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Search className="h-4 w-4 text-gray-400" />
+      <div className="px-4 sm:px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex flex-col gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Gender Verifications</h2>
+          <div className="relative max-w-xs w-full">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search className="h-4 w-4 text-gray-400" />
+            </div>
+            <input
+              type="text"
+              placeholder="Search by name or email..."
+              className="block w-full pl-10 pr-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-wine-500 focus:border-transparent"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
           </div>
-          <input
-            type="text"
-            placeholder="Search by name or email..."
-            className="block w-full pl-10 pr-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-wine-500 focus:border-transparent"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+        </div>
+        <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-gray-600 dark:text-gray-300">Status</label>
+            <select
+              className="text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-2 py-2 focus:outline-none focus:ring-2 focus:ring-wine-500"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as any)}
+            >
+              <option value="all">All</option>
+              <option value="pending">Pending</option>
+              <option value="approved">Approved</option>
+              <option value="rejected">Rejected</option>
+            </select>
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-gray-600 dark:text-gray-300">From</label>
+            <input
+              type="date"
+              className="text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-2 py-2 focus:outline-none focus:ring-2 focus:ring-wine-500"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+            />
+            <label className="text-sm text-gray-600 dark:text-gray-300">To</label>
+            <input
+              type="date"
+              className="text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-2 py-2 focus:outline-none focus:ring-2 focus:ring-wine-500"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+            />
+          </div>
         </div>
       </div>
       {actionError && (
