@@ -32,6 +32,7 @@ const DashboardLayout = () => {
     { icon: CreditCard, label: 'Subscriptions', path: '/subscriptions' },
     { icon: Users, label: 'Users', path: '/users' },
     { icon: Shield, label: 'Admins', path: '/admins' },
+    { icon: Shield, label: 'Gender', path: '/gender' },
     { icon: Headphones, label: 'Support', path: '/support' },
     { icon: FileText, label: 'Reports', path: '/reports' }
   ]), []);

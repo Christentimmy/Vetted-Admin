@@ -8,6 +8,7 @@ import SubscriptionManagement from './pages/SubscriptionManagement';
 import Report from './pages/Report';
 import AdminManagement from './pages/AdminManagement';
 import Support from './pages/Support';
+import Gender from './pages/Gender';
 import DashboardLayout from './components/DashboardLayout';
 import LoadingSpinner from './components/LoadingSpinner';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -56,6 +57,7 @@ const App = () => {
               <Route path="/reports" element={<Report />} />
               <Route path="/admins" element={<AdminManagement />} />
               <Route path="/support" element={<Support />} />
+              <Route path="/gender" element={<Gender />} />
             </Route>
           </Route>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
