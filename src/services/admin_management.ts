@@ -124,13 +124,21 @@ export const adminManagementService = {
   async createAdmin(adminData: CreateAdminRequest): Promise<Admin> {
     try {
       const token = localStorage.getItem('vetted_admin_token');
+      // Only send the keys the backend expects: email, password, username, role
+      const payload = {
+        email: adminData.email,
+        password: adminData.password,
+        username: adminData.username,
+        role: (adminData.role === 'superadmin' ? 'super_admin' : adminData.role) ?? 'admin',
+      } as const;
+
       const response = await fetch(`${API_BASE_URL}/admin/create-admin`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(adminData)
+        body: JSON.stringify(payload)
       });
 
       if (!response.ok) {

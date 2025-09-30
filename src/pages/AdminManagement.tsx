@@ -179,13 +179,13 @@ const AdminManagement = () => {
 
     try {
       setIsCreatingAdmin(true);
-      const newAdmin = await adminManagementService.createAdmin({
+      await adminManagementService.createAdmin({
         ...newAdminData,
         role: newAdminData.role as "admin" | "superadmin"
       });
 
-      // Add the new admin to the local state
-      setAdmins(prevAdmins => [newAdmin, ...prevAdmins]);
+      // Refresh list from backend to ensure UI reflects server state
+      await fetchAdmins(pagination?.page || 1);
 
       // Close dialog and reset state
       setShowCreateDialog(false);
