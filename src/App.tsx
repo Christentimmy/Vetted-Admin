@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { authService } from './services/auth';
+import { isLoggedIn } from './utils/token';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import UserManagement from './pages/UserManagement';
@@ -15,16 +16,13 @@ import ProtectedRoute from './components/ProtectedRoute';
 
 const App = () => {
   const [isLoading, setIsLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const isValid = await authService.validateToken();
-        setIsAuthenticated(isValid);
+        await authService.validateToken();
       } catch (error) {
         console.error('Auth check failed:', error);
-        setIsAuthenticated(false);
       } finally {
         setIsLoading(false);
       }
@@ -47,7 +45,7 @@ const App = () => {
         <Routes>
           <Route 
             path="/login" 
-            element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Login />} 
+            element={isLoggedIn() ? <Navigate to="/dashboard" replace /> : <Login />} 
           />
           <Route element={<ProtectedRoute />}>
             <Route element={<DashboardLayout />}>
